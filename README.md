@@ -6,9 +6,11 @@ thread-local proxy for a given service spawned in dedicated Worker thread.
 
 the proxy resolves to a service object with the same interface
 as that of the original service running in the Worker thread.
-
 however, in its current implementation, only enumerable methods of the service
 are proxied.
+
+the proxy exposes a `terminate` method that allows to properly
+shut down the service in the Worker thread, and terminate the Worker.
 
 # <a name="api"></a> API v1.0.0 experimental
 Typescript compatible.
@@ -27,6 +29,7 @@ in a dedicated Worker thread and proxy in the main thread.
  */
 export interface Service {
   process (text: string): string
+  stop ():
 }
 
 export interface ServiceFactory {
@@ -50,15 +53,26 @@ const spec = { /* service configuration options */ }
 const service = newService(spec)
 
 // hook up the service so it can be proxied from the main thread
+// and wait until the proxy's terminate method is called in the main thread
 extendWorker(self, service)
+.then((terminate) => {
+  service.stop() // shut service down if necessary
+  .then(terminate) // when ready, terminate worker
+})
 ```
 
 ### file: index.ts
 this script runs in the main thread.
 it spawns the `worker.ts` script in a dedicated Worker thread
 and proxies it in the main thread.
+
 the resulting proxy resolves to a service object with the same interface
 as that of the original service running in the Worker thread.
+note that in its current implementation, only enumerable methods of the service
+are proxied.
+
+to shut down the service and terminate the Worker,
+the proxy's `terminate` method can be called as in this example.
 
 ```ts
 import { newServiceProxy } from 'worker-proxy'
@@ -71,6 +85,7 @@ const proxy: Promise<Service> = newServiceProxy('./worker.ts')
 proxy
 .then(service => service.process('Hello World!'))
 .then(console.log.bind(console)) // result from service.process('Hello World!') in Worker
+.then(() => proxy.terminate()) // shut down service and terminate Worker
 ```
 
 # <a name="license"></a> LICENSE
