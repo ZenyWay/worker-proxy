@@ -2,14 +2,22 @@
 [![build status](https://travis-ci.org/ZenyWay/worker-proxy.svg?branch=master)](https://travis-ci.org/ZenyWay/worker-proxy)
 [![Join the chat at https://gitter.im/ZenyWay/worker-proxy](https://badges.gitter.im/ZenyWay/worker-proxy.svg)](https://gitter.im/ZenyWay/worker-proxy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-local proxy for web worker running a given service.
+thread-local proxy for a given service spawned in dedicated Worker thread.
+
+the proxy resolves to a service object with the same interface
+as that of the original service running in the Worker thread.
+
+however, in its current implementation, only enumerable methods of the service
+are proxied.
 
 # <a name="api"></a> API v1.0.0 experimental
 Typescript compatible.
 
 ## example
 ### module: `my-service`
-example of a service module.
+example of a third-party service module that we want to spawn
+in a dedicated Worker thread and proxy in the main thread.
+(this service module is not part of the `worker-proxy` module)
 
 ```ts
 /**
@@ -45,10 +53,11 @@ const service = newService(spec)
 extendWorker(self, service)
 ```
 
-### index.ts
-this script proxies and spawns the `worker.ts` script
-in a dedicated Worker thread.
-the proxy resolves to a service object with the same interface
+### file: index.ts
+this script runs in the main thread.
+it spawns the `worker.ts` script in a dedicated Worker thread
+and proxies it in the main thread.
+the resulting proxy resolves to a service object with the same interface
 as that of the original service running in the Worker thread.
 
 ```ts
@@ -58,10 +67,10 @@ import { Service } from 'my-service' // only import the interface for casting
 // proxy and spawn the Worker
 const proxy: Promise<Service> = newServiceProxy('./worker.ts')
 
-// unwrap the Promise to access the service
+// unwrap the Promise to access the proxied service
 proxy
 .then(service => service.process('Hello World!'))
-.then(console.log.bind(console)) // result from service.process(text) in Worker
+.then(console.log.bind(console)) // result from service.process('Hello World!') in Worker
 ```
 
 # <a name="license"></a> LICENSE
