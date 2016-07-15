@@ -25,11 +25,13 @@ in a dedicated Worker thread and proxy in the main thread.
 /**
  * this is the service that will be spawned in a Worker thread
  * and that will be proxied in the main thread.
- * in this example, the service is created by a factory.
+ * in this example, the service is created by a factory,
+ * and it exposes an async interface (async service methods).
+ * it also expects to be shut down by calling its `stop` method, async as well.
  */
 export interface Service {
-  process (text: string): string
-  stop ():
+  process (text: string): Promise<string>
+  stop (): Promise<void> // say this must be called to shut down the service
 }
 
 export interface ServiceFactory {
@@ -42,7 +44,10 @@ export const newService: ServiceFactory
 ### file: `worker.ts` (`WorkerGlobalScope`)
 this script will be spawned from the main thread in a dedicated Worker thread.
 it creates and initializes the service from the `my-service` module,
-then hooks it up so that it can be proxied from the main thread.
+then hooks it up so that it can be proxied from the main thread,
+and waits until the proxy's terminate method is called in the main thread,
+then properly shuts down the service
+before allowing this Worker thread to be terminated from the main thread.
 
 ```ts
 import { extendWorker } from 'worker-proxy'
@@ -57,7 +62,7 @@ const service = newService(spec)
 extendWorker(self, service)
 .then((terminate) => {
   service.stop() // shut service down if necessary
-  .then(terminate) // when ready, terminate worker
+  .then(terminate) // then terminate this Worker from the main thread
 })
 ```
 
