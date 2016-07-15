@@ -4,40 +4,63 @@
 
 local proxy for web worker running a given service.
 
-# <a name="api"></a> API v0.0.1 experimental
+# <a name="api"></a> API v1.0.0 experimental
 Typescript compatible.
 
 ## example
-### worker.ts (WorkerGlobalScope)
+### module: `my-service`
+example of a service module.
+
+```ts
+/**
+ * this is the service that will be spawned in a Worker thread
+ * and that will be proxied in the main thread.
+ * in this example, the service is created by a factory.
+ */
+export interface Service {
+  process (text: string): string
+}
+
+export interface ServiceFactory {
+  (spec?: Object): Promise<Service>
+}
+
+export const newService: ServiceFactory
+```
+
+### file: `worker.ts` (`WorkerGlobalScope`)
+this script will be spawned from the main thread in a dedicated Worker thread.
+it creates and initializes the service from the `my-service` module,
+then hooks it up so that it can be proxied from the main thread.
+
 ```ts
 import { extendWorker } from 'worker-proxy'
-/**
- * example:
- * export interface newService {
- *   (spec?: Object): Service
- * }
- * export interface Service {
- *   process (text: string): string
- * }
- */
 import { newService, Service } from 'my-service'
+
+// create and initialize the service
 const spec = { /* service configuration options */ }
 const service = newService(spec)
 
+// hook up the service so it can be proxied from the main thread
 extendWorker(self, service)
-// service can now be accessed from parent process
 ```
 
 ### index.ts
+this script proxies and spawns the `worker.ts` script
+in a dedicated Worker thread.
+the proxy resolves to a service object with the same interface
+as that of the original service running in the Worker thread.
+
 ```ts
 import { newServiceProxy } from 'worker-proxy'
-import { Service } from 'my-service'
+import { Service } from 'my-service' // only import the interface for casting
 
-const proxy: Promise<Service> = newServiceProxy('./worker.ts') // spawn the Worker
-const text = 'Hello World!'
+// proxy and spawn the Worker
+const proxy: Promise<Service> = newServiceProxy('./worker.ts')
 
+// unwrap the Promise to access the service
 proxy
-.then(service => service.process(text))
+.then(service => service.process('Hello World!'))
 .then(console.log.bind(console)) // result from service.process(text) in Worker
 ```
 
