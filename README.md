@@ -2,7 +2,7 @@
 [![build status](https://travis-ci.org/ZenyWay/worker-proxy.svg?branch=master)](https://travis-ci.org/ZenyWay/worker-proxy)
 [![Join the chat at https://gitter.im/ZenyWay/worker-proxy](https://badges.gitter.im/ZenyWay/worker-proxy.svg)](https://gitter.im/ZenyWay/worker-proxy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-proxy for web worker
+local proxy for web worker running a given service.
 
 # <a name="api"></a> API v0.0.1 experimental
 Typescript compatible.
@@ -10,24 +10,29 @@ Typescript compatible.
 ## example
 ### worker.ts (WorkerGlobalScope)
 ```ts
-import { getWorkerServiceMixin } from 'worker-proxy'
+import { extendWorker } from 'worker-proxy'
 /**
  * example:
+ * export interface newService {
+ *   (spec?: Object): service
+ * }
  * export interface service {
  *   process (text: string): string
  * }
  */
-import service from 'my-service'
+import newService from 'my-service'
+const spec = { /* service configuration options */ }
+const service = newService(spec)
 
-const serviceMixin = getWorkerServiceMixin(service)
-serviceMixin(self)
+extendWorker(self, service)
+// service can now be accessed from parent process
 ```
 
 ### index.ts
 ```ts
 import { newServiceProxy } from 'worker-proxy'
 
-const proxy = newServiceProxy('worker.ts')
+const proxy = newServiceProxy('worker.ts') // spawn the Worker
 const text = 'Hello World!'
 
 proxy
