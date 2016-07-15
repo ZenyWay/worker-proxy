@@ -14,13 +14,13 @@ import { extendWorker } from 'worker-proxy'
 /**
  * example:
  * export interface newService {
- *   (spec?: Object): service
+ *   (spec?: Object): Service
  * }
- * export interface service {
+ * export interface Service {
  *   process (text: string): string
  * }
  */
-import newService from 'my-service'
+import { newService, Service } from 'my-service'
 const spec = { /* service configuration options */ }
 const service = newService(spec)
 
@@ -31,8 +31,9 @@ extendWorker(self, service)
 ### index.ts
 ```ts
 import { newServiceProxy } from 'worker-proxy'
+import { Service } from 'my-service'
 
-const proxy = newServiceProxy('worker.ts') // spawn the Worker
+const proxy: Promise<Service> = newServiceProxy('./worker.ts') // spawn the Worker
 const text = 'Hello World!'
 
 proxy
