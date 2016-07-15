@@ -2,37 +2,75 @@
 [![build status](https://travis-ci.org/ZenyWay/worker-proxy.svg?branch=master)](https://travis-ci.org/ZenyWay/worker-proxy)
 [![Join the chat at https://gitter.im/ZenyWay/worker-proxy](https://badges.gitter.im/ZenyWay/worker-proxy.svg)](https://gitter.im/ZenyWay/worker-proxy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-proxy for web worker
+thread-local proxy for a given service spawned in dedicated Worker thread.
 
-# <a name="api"></a> API v0.0.1 experimental
+the proxy resolves to a service object with the same interface
+as that of the original service running in the Worker thread.
+
+however, in its current implementation, only enumerable methods of the service
+are proxied.
+
+# <a name="api"></a> API v1.0.0 experimental
 Typescript compatible.
 
 ## example
-### worker.ts (WorkerGlobalScope)
-```ts
-import { getWorkerServiceMixin } from 'worker-proxy'
-/**
- * example:
- * export interface service {
- *   process (text: string): string
- * }
- */
-import service from 'my-service'
+### module: `my-service`
+example of a third-party service module that we want to spawn
+in a dedicated Worker thread and proxy in the main thread.
+(this service module is not part of the `worker-proxy` module)
 
-const serviceMixin = getWorkerServiceMixin(service)
-serviceMixin(self)
+```ts
+/**
+ * this is the service that will be spawned in a Worker thread
+ * and that will be proxied in the main thread.
+ * in this example, the service is created by a factory.
+ */
+export interface Service {
+  process (text: string): string
+}
+
+export interface ServiceFactory {
+  (spec?: Object): Promise<Service>
+}
+
+export const newService: ServiceFactory
 ```
 
-### index.ts
+### file: `worker.ts` (`WorkerGlobalScope`)
+this script will be spawned from the main thread in a dedicated Worker thread.
+it creates and initializes the service from the `my-service` module,
+then hooks it up so that it can be proxied from the main thread.
+
+```ts
+import { extendWorker } from 'worker-proxy'
+import { newService, Service } from 'my-service'
+
+// create and initialize the service
+const spec = { /* service configuration options */ }
+const service = newService(spec)
+
+// hook up the service so it can be proxied from the main thread
+extendWorker(self, service)
+```
+
+### file: index.ts
+this script runs in the main thread.
+it spawns the `worker.ts` script in a dedicated Worker thread
+and proxies it in the main thread.
+the resulting proxy resolves to a service object with the same interface
+as that of the original service running in the Worker thread.
+
 ```ts
 import { newServiceProxy } from 'worker-proxy'
+import { Service } from 'my-service' // only import the interface for casting
 
-const proxy = newServiceProxy('worker.ts')
-const text = 'Hello World!'
+// proxy and spawn the Worker
+const proxy: Promise<Service> = newServiceProxy('./worker.ts')
 
+// unwrap the Promise to access the proxied service
 proxy
-.then(service => service.process(text))
-.then(console.log.bind(console)) // result from service.process(text) in Worker
+.then(service => service.process('Hello World!'))
+.then(console.log.bind(console)) // result from service.process('Hello World!') in Worker
 ```
 
 # <a name="license"></a> LICENSE
