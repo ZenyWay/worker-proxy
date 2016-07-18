@@ -26,11 +26,11 @@ in a dedicated Worker thread and proxy in the main thread.
  * this is the service that will be spawned in a Worker thread
  * and that will be proxied in the main thread.
  * in this example, the service is created by a factory,
- * and it exposes an async interface (async service methods).
+ * and it exposes a Promise-based interface (async service methods).
  * it also expects to be shut down by calling its `stop` method, async as well.
  */
 export interface Service {
-  process (text: string): Promise<string>
+  toUpperCase (text: string): Promise<string> // say this converts text to upper case
   stop (): Promise<void> // say this must be called to shut down the service
 }
 
@@ -42,27 +42,40 @@ export const newService: ServiceFactory
 ```
 
 ### file: `worker.ts` (`WorkerGlobalScope`)
-this script will be spawned from the main thread in a dedicated Worker thread.
+this script will be spawned from the main thread in a dedicated `Worker` thread.
 it creates and initializes the service from the `my-service` module,
-then hooks it up so that it can be proxied from the main thread,
-and waits until the proxy's terminate method is called in the main thread,
-then properly shuts down the service
-before allowing this Worker thread to be terminated from the main thread.
+and then hooks it up so that it can be proxied from the main thread.
+In doing so, it defines an `onterminate` handler
+that will be called when the proxy is terminated in the main thread
+and that allows to properly shut down the service
+before the `Worker` is terminated.
+
+The `onterminate` handler may return a `Promise`
+that will be resolved or rejected in the main thread,
+allowing the latter to handle failure of service shut-down
+before eventually forcing the `Worker` to terminate.
 
 ```ts
-import { extendWorker } from 'worker-proxy'
-import { newService, Service } from 'my-service'
+import { hookService } from 'worker-proxy'
+import { newService } from 'my-service'
 
 // create and initialize the service
 const spec = { /* service configuration options */ }
 const service = newService(spec)
 
+// define an `onterminate` handler to properly shut down the service
+// before this Worker is terminated.
+// the return value will be sent back to the main thread.
+function onterminate () {
+  return service.stop() // resolve or reject back to main thread
+}
+
 // hook up the service so it can be proxied from the main thread
 // and wait until the proxy's terminate method is called in the main thread
-extendWorker(self, service)
-.then((terminate) => {
-  service.stop() // shut service down if necessary
-  .then(terminate) // then terminate this Worker from the main thread
+hookService({
+  worker: self,
+  service: service,
+  onterminate: onterminate
 })
 ```
 
@@ -85,12 +98,14 @@ import { Service } from 'my-service' // only import the interface for casting
 
 // proxy and spawn the Worker
 const proxy: Promise<Service> = newServiceProxy('./worker.ts')
+const terminate = proxy.terminate.bind(proxy)
 
 // unwrap the Promise to access the proxied service
-proxy
-.then(service => service.process('Hello World!'))
+proxy.service
+.then(service => service.toUpperCase('Rob says wow!'))
 .then(console.log.bind(console)) // result from service.process('Hello World!') in Worker
-.then(() => proxy.terminate()) // shut down service and terminate Worker
+.then(terminate) // shut down service and terminate Worker
+.catch(err => proxy.kill()) // force Worker termination, even if service shut-down fails
 ```
 
 # <a name="license"></a> LICENSE
