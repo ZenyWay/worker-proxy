@@ -1,7 +1,7 @@
 {
   "name": "worker-proxy",
   "version": "1.0.0",
-  "description": "proxy for web worker",
+  "description": "thread-local proxy for a given service spawned in dedicated Worker thread",
   "main": "dist/index.js",
   "scripts": {
     "prebuild": "mkdirp dist && rimraf dist/* && typings install",
@@ -17,10 +17,8 @@
     "url": "git+https://github.com/zenyway/worker-proxy.git"
   },
   "keywords": [
-    "crypto",
-    "web crypto",
-    "node crypto",
-    "openpgp"
+    "worker",
+    "proxy"
   ],
   "author": {
     "name": "Stephane M. Catala",
