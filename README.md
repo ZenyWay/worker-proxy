@@ -4,33 +4,37 @@
 
 thread-local proxy for a given service spawned in dedicated Worker thread.
 
-the proxy resolves to a service object with the same interface
-as that of the original service running in the Worker thread.
-however, in its current implementation, only enumerable methods of the service
-are proxied.
+the proxy's `service` property resolves to a service object
+with the same interface as that of the original service
+running in the `Worker` thread.
+only methods of the service object and its prototype chain
+are proxied (not all properties).
 
-the proxy exposes a `terminate` method that allows to properly
-shut down the service in the Worker thread, and terminate the Worker.
+the proxy exposes a `terminate` method that allows
+to properly shut down the service in the `Worker` thread
+through a `onterminate` handler in the `Worker` thread
+before definitively terminating the `Worker`.
 
 # <a name="api"></a> API v1.0.0 experimental
 Typescript compatible.
 
 ## example
 ### module: `my-service`
-example of a third-party service module that we want to spawn
-in a dedicated Worker thread and proxy in the main thread.
-(this service module is not part of the `worker-proxy` module)
+[example](./spec/example) of a sample third-party service module
+that we want to spawn in a dedicated Worker thread and proxy in the main thread.
+the service module is not part of the `worker-proxy` module.
 
 ```ts
 /**
  * this is the service that will be spawned in a Worker thread
  * and that will be proxied in the main thread.
  * in this example, the service is created by a factory,
- * and it exposes a Promise-based interface (async service methods).
- * it also expects to be shut down by calling its `stop` method, async as well.
+ * and it exposes both sync and async (Promise-returning) methods
+ * for illustration purposes.
+ * it expects to be shut down by calling its async `stop` method.
  */
 export interface Service {
-  toUpperCase (text: string): Promise<string> // say this converts text to upper case
+  toUpperCase (text: string): string // say this converts text to upper case
   stop (): Promise<void> // say this must be called to shut down the service
 }
 
@@ -38,7 +42,8 @@ export interface ServiceFactory {
   (spec?: Object): Promise<Service>
 }
 
-export const newService: ServiceFactory
+const newService: ServiceFactory // = ... implementation left out
+export default newService
 ```
 
 ### file: `worker.ts` (`WorkerGlobalScope`)
@@ -61,22 +66,24 @@ import { newService } from 'my-service'
 
 // create and initialize the service
 const spec = { /* service configuration options */ }
-const service = newService(spec)
+const service = newService(spec) // Promise<Service>
 
 // define an `onterminate` handler to properly shut down the service
 // before this Worker is terminated.
 // the return value will be sent back to the main thread.
 function onterminate () {
-  return service.stop() // resolve or reject back to main thread
+  return service
+  .then(service => service.stop()) // resolve or reject back to main thread
 }
 
 // hook up the service so it can be proxied from the main thread
 // and wait until the proxy's terminate method is called in the main thread
-hookService({
+service
+.then(service => hookService({
   worker: self,
   service: service,
   onterminate: onterminate
-})
+}))
 ```
 
 ### file: index.ts
@@ -95,15 +102,16 @@ the proxy's `terminate` method can be called as in this example.
 ```ts
 import { newServiceProxy } from 'worker-proxy'
 import { Service } from 'my-service' // only import the interface for casting
+const log = console.log.bind(console)
 
 // proxy and spawn the Worker
-const proxy: Promise<Service> = newServiceProxy('./worker.ts')
+const proxy = newServiceProxy<Service>('./worker.ts')
 const terminate = proxy.terminate.bind(proxy)
 
 // unwrap the Promise to access the proxied service
 proxy.service
 .then(service => service.toUpperCase('Rob says wow!'))
-.then(console.log.bind(console)) // result from service.process('Hello World!') in Worker
+.then(log) // result from service.process('Hello World!') in Worker
 .then(terminate) // shut down service and terminate Worker
 .catch(err => proxy.kill()) // force Worker termination, even if service shut-down fails
 ```

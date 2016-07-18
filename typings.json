@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "bluebird": "registry:npm/bluebird#3.3.4+20160622205516",
+    "debug": "registry:npm/debug#2.0.0+20160511151334",
     "proxyquire": "registry:npm/proxyquire#1.0.0+20160211003958"
   }
 }
