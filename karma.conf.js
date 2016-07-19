@@ -25,7 +25,7 @@ module.exports = function (config) {
       'karma-junit-reporter' // output to xml file
     ],
     preprocessors: {
-      'spec/*.{js,ts}': [ 'browserify' ]
+      'spec/**/*.{js,ts}': [ 'browserify' ]
     },
     browserify: { // https://github.com/nikku/karma-browserify#plugins
       debug: true,

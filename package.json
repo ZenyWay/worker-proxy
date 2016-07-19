@@ -39,13 +39,14 @@
   },
   "homepage": "https://github.com/zenyway/worker-proxy#readme",
   "dependencies": {
+    "@types/bluebird": "^2.0.29",
+    "@types/debug": "0.0.28",
     "bluebird": "^3.4.0",
     "debug": "^2.2.0",
     "webworkify": "^1.3.0"
   },
   "devDependencies": {
-    "@types/bluebird": "^2.0.28",
-    "@types/debug": "0.0.28",
+    "@types/jasmine": "^2.2.30",
     "browserify": "^13.0.1",
     "browserify-istanbul": "^2.0.0",
     "concurrently": "^2.1.0",
