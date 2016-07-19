@@ -46,6 +46,7 @@
   "devDependencies": {
     "@types/bluebird": "^2.0.28",
     "@types/debug": "0.0.28",
+    "@types/jasmine": "^2.2.30",
     "browserify": "^13.0.1",
     "browserify-istanbul": "^2.0.0",
     "concurrently": "^2.1.0",

@@ -1,5 +1,3 @@
-/// <reference path="../typings/index.d.ts" />
-
 /**
  * Copyright 2016 Stephane M. Catala
  *
@@ -14,4 +12,4 @@
  * Limitations under the License.
  */
 ;
-// TODO
+import './lib/indexed-queue.spec.ts'

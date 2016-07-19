@@ -11,7 +11,7 @@ module.exports = function (config) {
       }
     },
     files: [
-      'spec/index.ts'
+      'spec/index.spec.ts'
     ],
     autoWatch: true,
     singleRun: true,
@@ -26,7 +26,7 @@ module.exports = function (config) {
       'karma-coverage'
     ],
     preprocessors: {
-      'spec/*.{js,ts}': [ 'browserify' ]
+      'spec/**/*.{js,ts}': [ 'browserify' ]
     },
     browserify: { // https://github.com/nikku/karma-browserify#plugins
       debug: true,
