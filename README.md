@@ -19,8 +19,16 @@ before definitively terminating the `Worker`.
 Typescript compatible.
 
 ## example
+the output from this [example](./spec/example) can be viewed
+in the browser console, by running the following commands
+from a terminal:
+```bash
+npm install
+npm run example
+```
+
 ### module: `my-service`
-[example](./spec/example) of a sample third-party service module
+example of a sample third-party service module
 that we want to spawn in a dedicated Worker thread and proxy in the main thread.
 the service module is not part of the `worker-proxy` module.
 
@@ -110,10 +118,10 @@ const terminate = proxy.terminate.bind(proxy)
 
 // unwrap the Promise to access the proxied service
 proxy.service
-.then(service => service.toUpperCase('Rob says wow!'))
-.then(log) // result from service.process('Hello World!') in Worker
+.call('toUpperCase', 'Rob says wow!') // or .then(service => service.toUpperCase('Rob says wow!'))
+.tap(log) // "ROB SAYS WOW!"
 .then(terminate) // shut down service and terminate Worker
-.catch(err => proxy.kill()) // force Worker termination, even if service shut-down fails
+.catch(err => log(err) || proxy.kill()) // log shutdown error and force Worker termination
 ```
 
 # <a name="license"></a> LICENSE

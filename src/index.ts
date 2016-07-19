@@ -1,5 +1,3 @@
-/// <reference path="../typings/index.d.ts" />
-
 /**
  * Copyright 2016 Stephane M. Catala
  *
@@ -120,7 +118,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
 	 */
 	static newInstance <S extends Object>(path: string,
   opts?: ServiceProxyOpts): ServiceProxy<S> {
-    if (opts && opts.timeout) { ServiceProxyClass.timeout = opts.timeout }
+    ServiceProxyClass.timeout = opts && opts.timeout || ServiceProxyClass.timeout
 
   	const sp = new ServiceProxyClass(path)
     log('ServiceProxyClass.newInstance', sp)
@@ -218,7 +216,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   resolve (uuid: number, res: any): void {
   	log('ServiceProxy.resolve', res)
     const call = this.calls.pop(uuid)
-    if (call) { call.resolve(res) } // call has not timed out
+    call && call.resolve(res) // call has not timed out
   }
   /**
    * @private
@@ -230,7 +228,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   reject (uuid: number, err: Error): void {
   	log('ServiceProxy.reject', err)
     const call = this.calls.pop(uuid)
-    if (call) { call.reject(err) } // call has not timed out
+    call && call.reject(err) // call has not timed out
   }
   /**
    * @private
