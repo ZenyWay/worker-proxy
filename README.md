@@ -110,10 +110,10 @@ const terminate = proxy.terminate.bind(proxy)
 
 // unwrap the Promise to access the proxied service
 proxy.service
-.then(service => service.toUpperCase('Rob says wow!'))
-.then(log) // result from service.process('Hello World!') in Worker
+.call('toUpperCase', 'Rob says wow!') // or .then(service => service.toUpperCase('Rob says wow!'))
+.tap(log) // "ROB SAYS WOW!"
 .then(terminate) // shut down service and terminate Worker
-.catch(err => proxy.kill()) // force Worker termination, even if service shut-down fails
+.catch(err => log(err) || proxy.kill()) // log shutdown error and force Worker termination
 ```
 
 # <a name="license"></a> LICENSE

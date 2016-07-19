@@ -21,15 +21,14 @@ import debug = require('debug')
 const log = debug('example')
 debug.enable('*')
 
-log('start')
 // proxy and spawn the Worker
 const proxy = newServiceProxy<Service>('./worker.js')
 const terminate = proxy.terminate.bind(proxy)
+
 log(proxy)
 // unwrap the Promise to access the proxied service
 proxy.service
-.tap(service => log(service))
-.then(service => service.toUpperCase('Rob says wow!'))
-.tap(log) // result from service.process('Hello World!') in Worker
+.call('toUpperCase', 'Rob says wow!')
+.tap(log) // "ROB SAYS WOW!"
 .then(terminate) // shut down service and terminate Worker
-.catch(err => proxy.kill()) // force Worker termination, even if service shut-down fails
+.catch(err => log(err) || proxy.kill()) // log shutdown error and force Worker termination
