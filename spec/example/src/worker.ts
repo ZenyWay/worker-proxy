@@ -1,5 +1,3 @@
-/// <reference path="../../../typings/index.d.ts" />
-
 /**
  * Copyright 2016 Stephane M. Catala
  *

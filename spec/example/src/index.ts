@@ -1,5 +1,3 @@
-/// <reference path="../../../typings/index.d.ts" />
-
 /**
  * Copyright 2016 Stephane M. Catala
  *
@@ -22,7 +20,7 @@ const log = debug('example')
 debug.enable('*')
 
 // proxy and spawn the Worker
-const proxy = newServiceProxy<Service>('./worker.js')
+const proxy = newServiceProxy<Service>('worker.js')
 const terminate = proxy.terminate.bind(proxy)
 
 log(proxy)
