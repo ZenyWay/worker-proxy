@@ -12,4 +12,5 @@
  * Limitations under the License.
  */
 ;
+import './lib/index-generator.spec.ts'
 import './lib/indexed-queue.spec.ts'

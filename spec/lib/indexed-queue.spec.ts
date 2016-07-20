@@ -34,12 +34,26 @@ beforeEach(() => { // setup queue
   mockIndex.undo.calls.reset()
 })
 
-describe('factory newIndexedQueue <T>(): IndexedQueue<T>', () => {
+describe('factory newIndexedQueue <T>(opts?: { index?: IndexGenerator }): ' +
+'IndexedQueue<T>', () => {
   it('should return an instance of IndexedQueue', () => {
     expect(queue.pop).toEqual(jasmine.any(Function))
     expect(queue.push).toEqual(jasmine.any(Function))
     expect(queue.has).toEqual(jasmine.any(Function))
     expect(queue.length).toEqual(jasmine.any(Function))
+  })
+  it('should override the internal IndexGenerator with opts.index', () => {
+    queue.push(42)
+    expect(mockIndex.next).toHaveBeenCalled()
+    mockIndex.undo()
+    mockIndex.undo.calls.reset()
+    try { queue.push(42) } catch (e) {} // Error 'internal conflict ...'
+    expect(mockIndex.undo).toHaveBeenCalled()
+  })
+  it('should default to the internal IndexGenerator ' +
+  'when opts.index not specified', () => {
+    const queue = newIndexedQueue()
+    expect(queue.pop(queue.push(42))).toBe(42)
   })
 })
 
@@ -109,10 +123,12 @@ describe('IndexedQueue<T>', () => {
     it('should return the value from the queue at the given index', () => {
       expect(queue.pop(index)).toEqual(42)
     })
-    it('should throw a ReferenceError when given a number index not in the queue', () => {
+    it('should throw a ReferenceError when given a number index not in the queue',
+    () => {
       expect(queue.pop.bind(queue, 42)).toThrowError(ReferenceError)
     })
-    it('should throw a ReferenceError when given an index that is not a number', () => {
+    it('should throw a ReferenceError when given an index that is not a number',
+    () => {
       expect(queue.pop.bind(queue, 'foo')).toThrowError(ReferenceError)
     })
     it('should throw a ReferenceError when not given an index', () => {
