@@ -35,9 +35,9 @@ export interface IndexedQueueOpts {
 
 /**
  * @public
- * @param  {number} start? initial value.
+ * @param {number} start? initial value.
  * {IndexGenerator#next} returns the next value after `start`.
- * @returns {IndexGenerator} instance
+ * @return {IndexGenerator} instance
  */
 export interface IndexGeneratorFactory {
   (start?: number): IndexGenerator
@@ -45,10 +45,10 @@ export interface IndexGeneratorFactory {
 
 /**
  * @public
- * a generator of {number} index values
- * between `-Number.MIN_SAFE_INTEGER` and `Number.MAX_SAFE_INTEGER`.
+ * a generator of integer index values
+ * between `-Number.MAX_SAFE_INTEGER` and `Number.MAX_SAFE_INTEGER`.
  * a generated value is guaranteed not to collide
- * with the previous `Number.MAX_SAFE_INTEGER - Number.MAX_SAFE_INTEGER`.
+ * with the previous `2 * Number.MAX_SAFE_INTEGER` values.
  */
 export interface IndexGenerator {
   /**
@@ -82,8 +82,8 @@ export interface IndexedQueue<T> {
    * @method pop
    * extract and return the entry indexed by the given `index`.
    * the entry is definitively removed from this `IndexedQueue`.
-   * @param  {number} index
-   * @returns {T} indexed entry
+   * @param {number} index
+   * @return {T} indexed entry
    * @error {Reference Error} 'invalid reference' when no arguments,
    * or when `index` is not a number or not in the queue
    */
@@ -92,8 +92,8 @@ export interface IndexedQueue<T> {
    * @public
    * @method push
    * queue the given `val` and return its `index` index.
-	 * @param  {T} val
-	 * @returns {number} index of queued `val`
+	 * @param {T} val
+	 * @return {number} index of queued `val`
    * @error {Reference Error} 'invalid reference' when no arguments
    * @error {Error} 'internal resource conflict for index ${index}'
    * when an entry is already queued at the generated index.
