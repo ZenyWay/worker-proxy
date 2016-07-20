@@ -16,7 +16,8 @@ through a `onterminate` handler in the `Worker` thread
 before definitively terminating the `Worker`.
 
 # <a name="api"></a> API v1.0.0 experimental
-Typescript compatible.
+`ES5` and [`Typescript`](http://www.typescriptlang.org/) compatible.
+Coded in `Typescript 2`.
 
 ## example
 the output from this [example](./spec/example) can be viewed
@@ -123,6 +124,9 @@ proxy.service
 .then(terminate) // shut down service and terminate Worker
 .catch(err => log(err) || proxy.kill()) // log shutdown error and force Worker termination
 ```
+
+# <a name="contributing"></a> CONTRIBUTING
+see the [contribution guidelines](./CONTRIBUTING)
 
 # <a name="license"></a> LICENSE
 Copyright 2016 Stéphane M. Catala
