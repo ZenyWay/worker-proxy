@@ -12,77 +12,129 @@
  * Limitations under the License.
  */
 ;
+import newIndexGenerator from './index-generator.ts'
 import debug = require('debug')
 const log = debug('indexed-queue')
 
+/**
+ * @public
+ * @param {IndexedQueueOpts} opts?
+ * @return {IndexedQueue} instance
+ */
 export interface IndexedQueueFactory {
-  <T>(): IndexedQueue<T>
+  <T>(opts?: IndexedQueueOpts): IndexedQueue<T>
+}
+
+export interface IndexedQueueOpts {
+  /**
+   * @public
+   * @prop {IndexGenerator} index?
+   */
+  index?: IndexGenerator
 }
 
 /**
  * @public
- * simple indexed queue.
- *
- * note: `index` indexes start at zero, are generated in unit increments
- * and wrap to Number.MIN_SAFE_INTEGER when reaching
- * `!Number.isSafeInteger(index)`.
- * this implementation does not test index conflicts.
- * (very) old entries hence theoretically risk being overridden.
- * use of this queue hence assumes that entries are only temporarily queued
- * and removed before the time it takes to wrap all safe integers
- * (which should practically always be true).
+ * @param  {number} start? initial value.
+ * {IndexGenerator#next} returns the next value after `start`.
+ * @returns {IndexGenerator} instance
+ */
+export interface IndexGeneratorFactory {
+  (start?: number): IndexGenerator
+}
+
+/**
+ * @public
+ * a generator of {number} index values
+ * between `-Number.MIN_SAFE_INTEGER` and `Number.MAX_SAFE_INTEGER`.
+ * a generated value is guaranteed not to collide
+ * with the previous `Number.MAX_SAFE_INTEGER - Number.MAX_SAFE_INTEGER`.
+ */
+export interface IndexGenerator {
+  /**
+   * @public
+   * @method next generate the next index value.
+   * @return {number} new index value, guaranteed not to collide
+   * with the previous `Number.MAX_SAFE_INTEGER - Number.MAX_SAFE_INTEGER`.
+   */
+  next (): number
+  /**
+   * @public
+   * @method undo the previous call to `this.next()`.
+   * @return {number} previously generated index value
+   */
+  undo (): number
+}
+
+/**
+ * @public
+ * @interface IndexedQueue
+ * simple indexed queue that automatically generates indexes for pushed entries.
+ * index values are any safe integer between `Number.MIN_SAFE_INTEGER`
+ * and `Number.MAX_SAFE_INTEGER`.
+ * a generated value is guaranteed not to collide
+ * with the previous `Number.MAX_SAFE_INTEGER - Number.MAX_SAFE_INTEGER`.
  * @generic {T} type of queued values
  */
 export interface IndexedQueue<T> {
   /**
    * @public
-   * @method
+   * @method pop
    * extract and return the entry indexed by the given `index`.
    * the entry is definitively removed from this `IndexedQueue`.
-   * @param  {number} index index
+   * @param  {number} index
    * @returns {T} indexed entry
-   * @error {Reference Error} 'invalid reference'
+   * @error {Reference Error} 'invalid reference' when no arguments,
+   * or when `index` is not a number or not in the queue
    */
   pop (index: number): T
 	/**
    * @public
-   * @method
+   * @method push
    * queue the given `val` and return its `index` index.
-   * note that index values are incrementally generated and
-   * wrap every `2*MAX_SAFE_INTEGER + 1`.
-   * this method does not check if an entry already exists
-   * for the generated index.
-   * it is hence theoretically possible for this method
-   * to overwrite a queued value, although in practice highly unlikely.
 	 * @param  {T} val
 	 * @returns {number} index of queued `val`
+   * @error {Reference Error} 'invalid reference' when no arguments
+   * @error {Error} 'internal resource conflict for index ${index}'
+   * when an entry is already queued at the generated index.
+   * in this case, the value of the next index remains unaffected.
 	 */
 	push (val: T): number
   /**
    * @public
-   * @method
-   * @returns {number} length of queue
+   * @method length
+   * @return {number} length of queue
    */
   length (): number
   /**
    * @public
-   * @method
-   * @param  {number} index index
-   * @returns {boolean} true if an entry is queued with the given `index`
+   * @method has
+   * @param {number} index
+   * @return {boolean} true when an entry is queued with the given `index`
    */
   has (index: number): boolean
 }
 
 /**
- * @public
- * indexed queue
+ * @private
+ * @class IndexedQueueClass<T>
+ * @implements implements IndexedQueue<T>
  * @generic {T} type of queued values
  */
 class IndexedQueueClass<T> implements IndexedQueue<T> {
-  static getInstance <T>(): IndexedQueue<T> {
-    return new IndexedQueueClass<T>()
-  }
   /**
+   * @public
+   * @see {IndexedQueueFactory}
+   */
+  static getInstance <T>(opts?: IndexedQueueOpts): IndexedQueue<T> {
+    assert(!opts || !opts.index || isIndexGenerator(opts.index),
+    TypeError, 'invalid IndexGenerator')
+    return new IndexedQueueClass<T>(opts && opts.index || newIndexGenerator())
+  }
+
+  constructor (public index: IndexGenerator) {}
+  /**
+   * @public
    * @see {IndexedQueue#pop}
    */
   pop (index: number): T {
@@ -94,26 +146,44 @@ class IndexedQueueClass<T> implements IndexedQueue<T> {
     return val
   }
 	/**
+   * @public
    * @see {IndexedQueue#push}
 	 */
 	push (val: T): number {
-  	const index = this._index.next()
+    assert(!!arguments.length, ReferenceError, 'missing argument')
+
+  	const index = this.index.next()
+    assert(!this.has(index) || this.rollbackIndex(), Error,
+    `internal resource conflict for index ${index}`)
+
   	this._queue[index] = val
     this._length++
     log('Queue.length', this._length)
     return index
   }
   /**
+   * @public
    * @see {IndexedQueue#length}
    */
   length (): number {
     return this._length
   }
   /**
+   * @public
    * @see {IndexedQueue#has}
    */
   has (index: number): boolean {
-  	return index in this._queue
+  	return (typeof index === 'number') && index in this._queue
+  }
+  /**
+   * @private
+   * @method rollbackIndex
+   * rollback to previous index value
+   * @return {boolean} false, always
+   */
+  rollbackIndex () {
+    this.index.undo()
+    return false
   }
   /**
    * @private
@@ -122,29 +192,30 @@ class IndexedQueueClass<T> implements IndexedQueue<T> {
   /**
    * @private
    */
-  _index = new Index()
-  /**
-   * @private
-   */
   _queue = {}
 }
 
-export const newIndexedQueue: IndexedQueueFactory =
-IndexedQueueClass.getInstance
+function isIndexGenerator(val: any): val is IndexGenerator {
+  return val && isObject(val) && isFunction(val.next) && isFunction(val.undo) &&
+  isNumber(val.next()) && isNumber(val.undo())
+}
 
-/**
- * @private
- * sequentially incrementing index
- */
-class Index {
-  next (): number {
-    return (Number.isSafeInteger(++this._index)) ?
-    this._index : this._index = Number.MIN_SAFE_INTEGER // wrap
-  }
-  _index = 0
+function isObject (val: any): val is Object {
+  return typeof val === 'object'
+}
+
+function isFunction (val: any): val is Function {
+  return typeof val === 'function'
+}
+
+function isNumber (val: any): val is number {
+  return typeof val === 'number'
 }
 
 function assert (val: boolean, errType: typeof Error, message: string): void {
   if (val) return
   throw new errType(message)
 }
+
+export const newIndexedQueue: IndexedQueueFactory =
+IndexedQueueClass.getInstance
