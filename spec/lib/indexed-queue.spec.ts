@@ -12,54 +12,154 @@
  * Limitations under the License.
  */
 ;
-import { newIndexedQueue, IndexedQueue } from '../../src/lib/indexed-queue'
+import {
+  newIndexedQueue,
+  IndexedQueue,
+  IndexGenerator
+} from '../../src/lib/indexed-queue'
 
-describe('IndexedQueue', () => {
-  let queue: IndexedQueue<any>
+let mockIndex: any
+let queue: IndexedQueue<any>
 
-    beforeEach(() => {
-    queue = newIndexedQueue()
+beforeEach(() => { // setup mockIndex
+  let _index = 0
+  mockIndex = jasmine.createSpyObj('mockIndex', [ 'next', 'undo'])
+  mockIndex.next.and.callFake(() => ++_index)
+  mockIndex.undo.and.callFake(() => --_index)
+})
+
+beforeEach(() => { // setup queue
+  queue = newIndexedQueue({ index: <IndexGenerator>mockIndex })
+  mockIndex.next.calls.reset()
+  mockIndex.undo.calls.reset()
+})
+
+describe('factory newIndexedQueue <T>(opts?: { index?: IndexGenerator }): ' +
+'IndexedQueue<T>', () => {
+  it('should return an instance of IndexedQueue', () => {
+    expect(queue.pop).toEqual(jasmine.any(Function))
+    expect(queue.push).toEqual(jasmine.any(Function))
+    expect(queue.has).toEqual(jasmine.any(Function))
+    expect(queue.length).toEqual(jasmine.any(Function))
   })
+  it('should override the internal IndexGenerator with opts.index', () => {
+    queue.push(42)
+    expect(mockIndex.next).toHaveBeenCalled()
+    mockIndex.undo()
+    mockIndex.undo.calls.reset()
+    try { queue.push(42) } catch (e) {} // Error 'internal conflict ...'
+    expect(mockIndex.undo).toHaveBeenCalled()
+  })
+  it('should default to the internal IndexGenerator ' +
+  'when opts.index not specified', () => {
+    const queue = newIndexedQueue()
+    expect(queue.pop(queue.push(42))).toBe(42)
+  })
+})
 
-  describe('has method', () => {
-    it('should return false if no index is given', () => {
+describe('IndexedQueue<T>', () => {
+  describe('method has (index: number): boolean', () => {
+    let index: number
+    beforeEach(() => {
+      index = queue.push(42)
+      mockIndex.next.calls.reset()
+      mockIndex.undo.calls.reset()
+    })
+    it('should return true when given an index that is queued', () => {
+      expect(queue.has(index)).toBe(true)
+    })
+    it('should return false when given a number index not in the queue', () => {
+      expect(queue.has(42)).toBe(false)
+    })
+    it('should return false when given an index that is not a number', () => {
+      expect((<Function>queue.has)('foo')).toBe(false)
+    })
+    it('should return false when not given an index', () => {
       expect((<Function>queue.has)()).toBe(false)
     })
-    it('should return false if given index is not in queue', () => {
-      expect(queue.has(Infinity)).toBe(false)
-    })
-    it('should return true if given index is in queue', () => {
-      const index = queue.push('foo')
-      expect(queue.has(index)).toBe(true)
+    it('should not affect the value of the next index', () => {
+      queue.has(42) // true
+      expect(mockIndex.next).not.toHaveBeenCalled()
+      expect(mockIndex.undo).not.toHaveBeenCalled()
+      queue.has(0) // false
+      expect(mockIndex.next).not.toHaveBeenCalled()
+      expect(mockIndex.undo).not.toHaveBeenCalled()
     })
   })
 
-  describe('push method', () => {
+  describe('method push (val: T): number', () => {
     it('should return the number index of the pushed value', () => {
-      expect(queue.push('foo')).toEqual(jasmine.any(Number))
+      expect(queue.has(queue.push(42))).toBe(true)
     })
     it('should add the given value to the queue', () => {
-      const index = queue.push('foo')
-      expect(queue.has(index)).toBe(true)
-      expect(queue.pop(index)).toBe('foo')
+      expect(queue.pop(queue.push('foo'))).toBe('foo')
     })
-    it('should add undefined to the queue if not given an argument', () => {
-      const index = (<Function>queue.push)()
-      expect(queue.pop(index)).toBe(undefined)
+    it('should accept to add undefined to the queue', () => {
+      expect(queue.pop(queue.push(undefined))).toBe(undefined)
+    })
+    it('should throw a ReferenceError when given no argument', () => {
+      expect(queue.push.bind(queue)).toThrowError(ReferenceError)
+    })
+    it('should throw a "internal resource conflict for index ${index}" Error ' +
+    'without affecting the value of the next index ' +
+    'when an entry is already queued at the generated index', () => {
+      const index = queue.push(42)
+      mockIndex.undo()
+      mockIndex.undo.calls.reset()
+      expect(queue.push.bind(queue, 42))
+      .toThrowError(Error, `internal resource conflict for index ${index}`)
+      expect(mockIndex.undo).toHaveBeenCalled()
+      expect(mockIndex.undo.calls.length).toBe(mockIndex.next.calls.length)
     })
   })
 
-  describe('pop method', () => {
-    let val: any, index: number
+  describe('method pop (index: number): T', () => {
+    let index: number
     beforeEach(() => {
-      val = 'foo'
-      index = queue.push(val)
+      index = queue.push(42)
+      mockIndex.next.calls.reset()
+      mockIndex.undo.calls.reset()
     })
     it('should return the value from the queue at the given index', () => {
-      expect(queue.pop(index)).toEqual(val)
+      expect(queue.pop(index)).toEqual(42)
     })
-    it('should throw an Error if given an index not in the queue', () => {
-      expect(queue.pop).toThrow()
+    it('should throw a ReferenceError when given a number index not in the queue',
+    () => {
+      expect(queue.pop.bind(queue, 42)).toThrowError(ReferenceError)
+    })
+    it('should throw a ReferenceError when given an index that is not a number',
+    () => {
+      expect(queue.pop.bind(queue, 'foo')).toThrowError(ReferenceError)
+    })
+    it('should throw a ReferenceError when not given an index', () => {
+      expect(queue.pop.bind(queue)).toThrowError(ReferenceError)
+    })
+    it('should not affect the value of the next index', () => {
+      queue.pop(index) // 42
+      expect(mockIndex.next).not.toHaveBeenCalled()
+      expect(mockIndex.undo).not.toHaveBeenCalled()
+      try { queue.pop(42) } catch (e) {} // ReferenceError
+      expect(mockIndex.next).not.toHaveBeenCalled()
+      expect(mockIndex.undo).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('method length (): number', () => {
+    it('should start from zero for a new queue instance', () => {
+      expect(queue.length()).toBe(0)
+    })
+    it('should increase by one when a new entry is added (push)', () => {
+      queue.push('')
+      expect(queue.length()).toBe(1)
+      queue.push('')
+      expect(queue.length()).toBe(2)
+    })
+    it('should decrease by one when an entry is removed (pop)', () => {
+      const indexes = [ 'a', 'b', 'c' ].map(val => queue.push(val))
+      queue.pop(indexes.pop())
+      expect(queue.length()).toBe(2)
+      queue.pop(indexes.pop())
+      expect(queue.length()).toBe(1)
     })
   })
 })
