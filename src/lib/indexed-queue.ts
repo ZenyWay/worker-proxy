@@ -12,7 +12,7 @@
  * Limitations under the License.
  */
 ;
-import newIndexGenerator from './index-generator.ts'
+import newIndexGenerator from './index-generator'
 import debug = require('debug')
 const log = debug('indexed-queue')
 
