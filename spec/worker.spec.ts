@@ -12,16 +12,18 @@
  * Limitations under the License.
  */
 ;
-import { newServiceProxy } from '../src/'
-
-interface Service {
-
-}
+import hookService from '../src/worker'
 
 beforeEach(() => {
-  newServiceProxy<Service>('./TODO')
+  hookService({
+    worker: <WorkerGlobalScope>{
+        postMessage (data: any) {}
+    },
+    service: {},
+    onterminate () { return Promise.resolve() }
+  })
 })
 
-describe('factory newServiceProxy<S extends Object>(path: string, opts?: ServiceProxyOpts): ServiceProxy<S>', () => {
+describe('hookService instance of ServiceBinder', () => {
   // TODO
 })
