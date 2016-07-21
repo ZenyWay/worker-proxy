@@ -174,14 +174,19 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   /**
    * @private
    * @method onmessage `message` event handler.
-   * call method as specified in received `Event.data` {WorkerServiceMethodCall}
+   * call method as specified in `event.data` {WorkerServiceMethodCall}
+   * ignoring `event.data.target`,
+   * or do nothing if `event.data.uuid` is not queued,
+   * or if `event.data.method` is neither one of `resolve` or `reject`.
    * @param  {WorkerServiceEvent} event
    */
   onmessage (event: WorkerServiceEvent) {
-    const { target, method, args } = event.data
-    const targetMethod = (this[target]||this)[method]||this.unknown
-    log('ServiceProxy.onmessage targetMethod =', targetMethod)
-  	targetMethod.apply(this, args)
+    if (!this.calls.has(event.data.uuid)) { return } // ignore invalid uuid
+    const call = this.calls.pop(event.data.uuid)
+    if (!isFunction(call[event.data.method])) { return } // ignore unknown method
+    log('WorkerService.onmessage target method', event.data.method)
+    const args = isArrayLike(event.data.args) ? event.data.args : []
+    call[event.data.method].apply(undefined, args)
   }
   /**
    * @private
@@ -208,30 +213,6 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   }
   /**
    * @private
-   * @method resolve the {Promise} of a previously placed call,
-   * identified by its `uuid`
-   * @param {number} uuid
-   * @param {any} res
-   */
-  resolve (uuid: number, res: any): void {
-  	log('ServiceProxy.resolve', res)
-    const call = this.calls.pop(uuid)
-    call && call.resolve(res) // call has not timed out
-  }
-  /**
-   * @private
-   * @method reject the {Promise} of a previously placed call,
-   * identified by its `uuid`
-   * @param {number} uuid
-   * @param {Error} err
-   */
-  reject (uuid: number, err: Error): void {
-  	log('ServiceProxy.reject', err)
-    const call = this.calls.pop(uuid)
-    call && call.reject(err) // call has not timed out
-  }
-  /**
-   * @private
    * @method proxy
    * @param  {string[]} methods
    * @returns {S} proxied service object from list of methods
@@ -239,13 +220,13 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   proxy (methods: string[]): S {
   	const sp = this
   	return methods.reduce((service, method) => {
-      service[method] = function () {
-        return sp.call.call(sp, {
+      service[method] = (function (/* arguments */) {
+        return this.call({
           target: 'service',
           method: method,
           args: Array.prototype.slice.call(arguments) // proper format for postMessage
         })
-      }
+      }).bind(this)
       return service
     }, <S>{})
   }
@@ -268,6 +249,65 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    * of pending call Promises, indexed by their `uuid`
    */
   calls: IndexedQueue<Resolver>
+}
+
+/**
+ * @param {any} val
+ * @return {val is WorkerServiceMethodCall}
+ */
+function isValidServiceProxyMethodCall (val: any):
+val is WorkerServiceMethodCall {
+  return isObject(val) && isUndefined(val.target) &&
+  (val.method in [ 'resolve', 'reject' ]) && (!val.args || isArrayLike(val.args))
+}
+
+/**
+ * @private
+ * @function isObject
+ * @param {any} val
+ * @return {val is Object} true if val is a non-null Object
+ */
+function isObject (val: any): val is Object {
+  return !!val && (typeof val === 'object')
+}
+/**
+ * @private
+ * @function isArrayLike
+ * @param {any} val
+ * @return {val is Object} true if `val` is an {Object}
+ * with a {number} length property
+ */
+function isArrayLike (val: any): val is Object {
+  return isObject(val) && isNumber(val.length)
+}
+
+function isFunction (val: any): val is Function {
+  return typeof val === 'function'
+}
+
+function isString (val: any): val is string {
+  return typeof val === 'string'
+}
+
+function isNumber (val: any): val is number {
+  return typeof val === 'number'
+}
+
+function isUndefined (val: any): val is undefined {
+  return typeof val === 'undefined'
+}
+
+/**
+ * @private
+ * @function assert
+ * @param {boolean} val
+ * @param {typeof Error} errType
+ * @param {string} message
+ * @throw {Error} of type `errType` with the given `message` when val is false
+ */
+function assert (val: boolean, errType: typeof Error, message: string): void {
+  if (val) return
+  throw new errType(message)
 }
 
 export const newServiceProxy: ServiceProxyFactory =

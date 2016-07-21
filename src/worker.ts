@@ -122,10 +122,11 @@ class WorkerServiceClass<S extends Object> {
    */
   getTargetMethod (spec: WorkerServiceMethodCall): Function {
     assert(isValidWorkerServiceMethodCall(spec), TypeError, "invalid argument")
-    const { target, method } = spec
-    const targetMethod = (isObject(this[target]) ? this[target] : this)[method]
-    log('WorkerService.getTargetMethod', targetMethod)
-    return isFunction(targetMethod) ? targetMethod : this.unknown
+    const target = isObject(this[spec.target]) ? this[spec.target] : this
+    const method =
+    isFunction(target[spec.method]) ? target[spec.method] : this.unknown
+    log('WorkerService.getTargetMethod', method)
+    return method
   }
   /**
    * @private
@@ -144,7 +145,7 @@ class WorkerServiceClass<S extends Object> {
    */
   resolve (uuid: number, res: any) {
   	log('WorkerService.resolve', res)
-    this.worker.postMessage({	method: 'resolve', args: [ uuid, res ] })
+    this.worker.postMessage({	uuid: uuid, method: 'resolve', args: [ res ] })
   }
   /**
    * @private
@@ -155,8 +156,9 @@ class WorkerServiceClass<S extends Object> {
   reject (uuid: number, err: Error) {
   	log('WorkerService.reject', err)
     this.worker.postMessage({
+      uuid: uuid,
     	method: 'reject',
-      args: [ uuid, {
+      args: [ {
         name: err.name,
         message: err.message,
         stack: err.stack
