@@ -97,7 +97,7 @@ class WorkerServiceClass<S extends Object> {
 	 * @param  {WorkerServiceEvent} event
 	 */
 	onmessage (event: WorkerServiceEvent): void {
-  	Promise.try(() => this.call(event.data)) // catch and reject exceptions
+  	Promise.try(() => this.callTargetMethod(event.data)) // catch and reject exceptions
     .then(this.resolve.bind(this, event.data.uuid))
     .catch(this.reject.bind(this, event.data.uuid))
   }
@@ -109,9 +109,9 @@ class WorkerServiceClass<S extends Object> {
    * @error {Error} from target method call
    * @error {Error} "invalid argument" when `spec` is invalid
    */
-  call (spec: WorkerServiceEventData): Promise<any> {
+  callTargetMethod (spec: WorkerServiceEventData): Promise<any> {
     assert(Number.isSafeInteger(spec.uuid), TypeError, "invalid argument")
-    return this.getTargetMethod(spec).apply(this, spec.args)
+    return this.getTargetMethod(spec).apply(this, spec.args || [])
   }
   /**
    * @private
@@ -236,7 +236,7 @@ function isWorkerGlobalScope (val: any): val is WorkerGlobalScope {
 function isValidWorkerServiceMethodCall (val: any):
 val is WorkerServiceMethodCall {
   return isObject(val) && (!val.target || isString(val.target)) &&
-  isString(val.method) && isArrayLike(val.args)
+  isString(val.method) && (!val.args || isArrayLike(val.args))
 }
 /**
  * @private
@@ -254,7 +254,7 @@ function isObjectPrototype (val: any): boolean {
  * @return {val is Object} true if val is a non-null Object
  */
 function isObject (val: any): val is Object {
-  return val && (typeof val === 'object')
+  return !!val && (typeof val === 'object')
 }
 /**
  * @private

@@ -132,6 +132,37 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       expect(service.stop).not.toHaveBeenCalled()
     })
 
+    describe('when "event.data.args" is falsy', () => {
+      beforeEach((done) => {
+        delete data.args
+        postMethodCall(data, done)
+      })
+      it('should call the target method as specified in "event.data" ' +
+      'with no arguments', () => {
+        expect(service.syncwork).toHaveBeenCalledTimes(1)
+        expect(service.syncwork).toHaveBeenCalledWith()
+      })
+    })
+
+    describe('when "event.data.args" is truthy but not Array-like', () => {
+      beforeEach((done) => {
+        data.args = { foo: 42 }
+        postMethodCall(data, done)
+      })
+      it('should post a request back to reject ' +
+      'with an "invalid argument" TypeError', () => {
+        expect(worker.postMessage).toHaveBeenCalledTimes(1)
+        expect(worker.postMessage).toHaveBeenCalledWith({
+          method: 'reject',
+          args: [ 42, {
+            name: 'TypeError',
+            message: 'invalid argument',
+            stack: jasmine.anything()
+          } ] // uuid, error
+        })
+      })
+    })
+
     describe('when "event.data.uuid" is not a safe integer', () => {
       beforeEach((done) => {
         data.uuid = Number.MAX_VALUE
@@ -173,25 +204,6 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
     describe('when "event.data.method" is not a string', () => {
       beforeEach((done) => {
         data.method = 64
-        postMethodCall(data, done)
-      })
-      it('should post a request back to reject ' +
-      'with an "invalid argument" TypeError', () => {
-        expect(worker.postMessage).toHaveBeenCalledTimes(1)
-        expect(worker.postMessage).toHaveBeenCalledWith({
-          method: 'reject',
-          args: [ 42, {
-            name: 'TypeError',
-            message: 'invalid argument',
-            stack: jasmine.anything()
-          } ] // uuid, error
-        })
-      })
-    })
-
-    describe('when "event.data.args" is not Array-like', () => {
-      beforeEach((done) => {
-        data.args = { foo: 42 }
         postMethodCall(data, done)
       })
       it('should post a request back to reject ' +
@@ -320,7 +332,6 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       beforeEach((done) => {
         delete data.target
         data.method = 'getServiceMethods'
-        data.args = []
         postMethodCall(data, done)
       })
       it('should post a request back to resolve to the list of service methods',
