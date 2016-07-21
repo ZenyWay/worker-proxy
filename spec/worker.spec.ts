@@ -13,17 +13,93 @@
  */
 ;
 import hookService from '../src/worker'
+import { pass, fail } from './support/jasmine-bluebird'
+
+let worker: WorkerGlobalScope
+let service: {
+  syncwork: (foo: string, bar: string) => number
+  asyncwork: (foo: string, bar: string) => Promise<number>
+  stop: () => void
+}
+
+beforeEach(() => {
+  worker = jasmine.createSpyObj('worker', [ 'postMessage' ])
+  service = jasmine.createSpyObj('service', [ 'asyncwork', 'syncwork', 'stop' ])
+  ;(<jasmine.Spy>service.syncwork).and.returnValue('foo')
+  ;(<jasmine.Spy>service.asyncwork)
+  .and.returnValue(Promise.reject(new Error('boom')))
+})
 
 beforeEach(() => {
   hookService({
-    worker: <WorkerGlobalScope>{
-        postMessage (data: any) {}
-    },
-    service: {},
-    onterminate () { return Promise.resolve() }
+    worker: worker,
+    service: service,
+    onterminate: service.stop.bind(service)
   })
 })
 
-describe('hookService instance of ServiceBinder', () => {
-  // TODO
+describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, ' +
+'service: S, onterminate: () => Promise<void> }): void', () => {
+  it('should add an "onmessage" handler to the given worker', () => {
+    expect(worker.onmessage).toEqual(jasmine.any(Function))
+  })
+
+  describe('handler onmessage (event: WorkerServiceEvent): void', () => {
+    let data: any
+    beforeEach(() => {
+      data = {
+        uuid: 42,
+        target: 'service',
+        method: 'syncwork',
+        args: [ 'foo', 'bar' ]
+      }
+    })
+
+    it('should call the target method as specified in event.data', () => {
+      worker.onmessage(<MessageEvent>{ data: data })
+
+      const expectSyncwork = expect(service.syncwork)
+      expectSyncwork.toHaveBeenCalledWith.apply(expectSyncwork, data.args)
+      expect(service.syncwork).toHaveBeenCalledTimes(1)
+      expect(service.asyncwork).not.toHaveBeenCalled()
+      expect(service.stop).not.toHaveBeenCalled()
+    })
+
+    describe('when the target method resolves', () => {
+      beforeEach((done) => {
+        ;(<jasmine.Spy>worker.postMessage)
+        .and.callFake(() => setTimeout(done)) // properly resolve pending promise
+        worker.onmessage(<MessageEvent>{ data: data })
+      })
+      it('should post a request back to resolve to the resolved value', () => {
+        expect(worker.postMessage).toHaveBeenCalledTimes(1)
+        expect(worker.postMessage).toHaveBeenCalledWith({
+          method: 'resolve',
+          args: [ 42, 'foo' ] // uuid, result
+        })
+      })
+    })
+
+    describe('when the target method resolves', () => {
+      beforeEach((done) => {
+        data.method = 'asyncwork'
+        ;(<jasmine.Spy>worker.postMessage)
+        .and.callFake(() => setTimeout(done)) // properly resolve pending promise
+        worker.onmessage(<MessageEvent>{ data: data })
+      })
+      it('should post a request back to reject with the error ' +
+      'from the called target method', () => {
+        expect(worker.postMessage).toHaveBeenCalledTimes(1)
+        expect(worker.postMessage).toHaveBeenCalledWith({
+          method: 'reject',
+          args: [ 42, {
+            name: 'Error',
+            message: 'boom',
+            stack: jasmine.anything()
+          } ] // uuid, result
+        })
+      })
+    })
+  })
+  it('should ', () => {})
 })
