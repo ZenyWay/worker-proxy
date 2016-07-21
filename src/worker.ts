@@ -96,12 +96,36 @@ class WorkerServiceClass<S extends Object> {
 	 * @param  {WorkerServiceEvent} event
 	 */
 	onmessage (event: WorkerServiceEvent): void {
-    const { uuid, target, method, args } = event.data
-    const targetMethod = (this[target]||this)[method]||this.unknown
-    log('WorkerService.onmessage.targetMethod', targetMethod)
-  	Promise.try(() => targetMethod.apply(this, args)) // manage errors from service
-    .then(this.resolve.bind(this, uuid))
-    .catch(this.reject.bind(this, uuid))
+  	Promise.try(() => this.call(event.data)) // catch and reject exceptions
+    .then(this.resolve.bind(this, event.data.uuid))
+    .catch(this.reject.bind(this, event.data.uuid))
+  }
+  /**
+   * @private
+   * @method call target method as specified.
+   * @param {WorkerServiceEventData} spec
+   * @return {Promise<any>} result from target method call
+   * @error {Error} from target method call
+   * @error {Error} "invalid argument" when `spec` is invalid
+   */
+  call (spec: WorkerServiceEventData): Promise<any> {
+    assert(Number.isSafeInteger(spec.uuid), TypeError, "invalid argument")
+    spec.args = spec.args || []
+    return this.getTargetMethod(spec).apply(this, spec.args || [])
+  }
+  /**
+   * @private
+   * @method getTargetMethod
+   * @param {WorkerServiceMethodCall} spec
+   * @return {Function} target method as specified in `spec`
+   * @error {Error} "invalid argument" when `spec` is invalid
+   */
+  getTargetMethod (spec: WorkerServiceMethodCall): Function {
+    assert(isValidWorkerServiceMethodCall(spec), TypeError, "invalid argument")
+    const { target, method, args } = spec
+    const targetMethod = (isObject(this[target]) ? this[target] : this)[method]
+    log('WorkerService.getTargetMethod', targetMethod)
+    return isFunction(targetMethod) ? targetMethod : this.unknown
   }
   /**
    * @private
@@ -190,14 +214,32 @@ function getPropertyNames (obj: Object): string[] {
 	return (!proto || (proto.constructor === Object)) ?
   Object.getOwnPropertyNames(keys) : getPropertyNames.call(keys, proto)
 }
-
 /**
  * @private
- * @param  {any} val
- * @returns {val is Function}
+ * @param {any} val
+ * @return {boolean} true if val is a non-null Object
  */
+function isObject (val: any): val is Object {
+  return val && (typeof val === 'object')
+}
+
 function isFunction (val: any): val is Function {
   return typeof val === 'function'
+}
+
+function isString (val: any): val is Object {
+  return typeof val === 'string'
+}
+
+function isValidWorkerServiceMethodCall (val: any):
+val is WorkerServiceMethodCall {
+  return isObject(val) && isString(val.target) && isString(val.method) &&
+  Array.isArray(val.args)
+}
+
+function assert (val: boolean, errType: typeof Error, message: string): void {
+  if (val) return
+  throw new errType(message)
 }
 
 const hookService: ServiceBinder = WorkerServiceClass.hookService

@@ -65,6 +65,111 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       expect(service.stop).not.toHaveBeenCalled()
     })
 
+    describe('when event.data.uuid is not a safe integer', () => {
+      beforeEach((done) => {
+        data.uuid = Number.MAX_VALUE
+        ;(<jasmine.Spy>worker.postMessage)
+        .and.callFake(() => setTimeout(done)) // properly resolve pending promise
+        worker.onmessage(<MessageEvent>{ data: data })
+      })
+      it('should post a request back to reject ' +
+      'with an "invalid argument" TypeError', () => {
+        expect(worker.postMessage).toHaveBeenCalledTimes(1)
+        expect(worker.postMessage).toHaveBeenCalledWith({
+          method: 'reject',
+          args: [ Number.MAX_VALUE, {
+            name: 'TypeError',
+            message: 'invalid argument',
+            stack: jasmine.anything()
+          } ] // uuid, error
+        })
+      })
+    })
+
+    describe('when event.data.target is not a string', () => {
+      beforeEach((done) => {
+        data.target = 64
+        ;(<jasmine.Spy>worker.postMessage)
+        .and.callFake(() => setTimeout(done)) // properly resolve pending promise
+        worker.onmessage(<MessageEvent>{ data: data })
+      })
+      it('should post a request back to reject ' +
+      'with an "invalid argument" TypeError', () => {
+        expect(worker.postMessage).toHaveBeenCalledTimes(1)
+        expect(worker.postMessage).toHaveBeenCalledWith({
+          method: 'reject',
+          args: [ 42, {
+            name: 'TypeError',
+            message: 'invalid argument',
+            stack: jasmine.anything()
+          } ] // uuid, error
+        })
+      })
+    })
+
+    describe('when event.data.method is not a string', () => {
+      beforeEach((done) => {
+        data.method = 64
+        ;(<jasmine.Spy>worker.postMessage)
+        .and.callFake(() => setTimeout(done)) // properly resolve pending promise
+        worker.onmessage(<MessageEvent>{ data: data })
+      })
+      it('should post a request back to reject ' +
+      'with an "invalid argument" TypeError', () => {
+        expect(worker.postMessage).toHaveBeenCalledTimes(1)
+        expect(worker.postMessage).toHaveBeenCalledWith({
+          method: 'reject',
+          args: [ 42, {
+            name: 'TypeError',
+            message: 'invalid argument',
+            stack: jasmine.anything()
+          } ] // uuid, error
+        })
+      })
+    })
+
+    describe('when event.data.args is truthy and not an Array', () => {
+      beforeEach((done) => {
+        data.args = 64
+        ;(<jasmine.Spy>worker.postMessage)
+        .and.callFake(() => setTimeout(done)) // properly resolve pending promise
+        worker.onmessage(<MessageEvent>{ data: data })
+      })
+      it('should post a request back to reject ' +
+      'with an "invalid argument" TypeError', () => {
+        expect(worker.postMessage).toHaveBeenCalledTimes(1)
+        expect(worker.postMessage).toHaveBeenCalledWith({
+          method: 'reject',
+          args: [ 42, {
+            name: 'TypeError',
+            message: 'invalid argument',
+            stack: jasmine.anything()
+          } ] // uuid, error
+        })
+      })
+    })
+
+    describe('when the target method is unknown', () => {
+      beforeEach((done) => {
+        data.method = 'shazam'
+        ;(<jasmine.Spy>worker.postMessage)
+        .and.callFake(() => setTimeout(done)) // properly resolve pending promise
+        worker.onmessage(<MessageEvent>{ data: data })
+      })
+      it('should post a request back to reject with an "unknown method" Error',
+      () => {
+        expect(worker.postMessage).toHaveBeenCalledTimes(1)
+        expect(worker.postMessage).toHaveBeenCalledWith({
+          method: 'reject',
+          args: [ 42, {
+            name: 'Error',
+            message: 'unknown method',
+            stack: jasmine.anything()
+          } ] // uuid, error
+        })
+      })
+    })
+
     describe('when the target method resolves', () => {
       beforeEach((done) => {
         ;(<jasmine.Spy>worker.postMessage)
@@ -80,15 +185,15 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       })
     })
 
-    describe('when the target method resolves', () => {
+    describe('when the target method rejects', () => {
       beforeEach((done) => {
         data.method = 'asyncwork'
         ;(<jasmine.Spy>worker.postMessage)
         .and.callFake(() => setTimeout(done)) // properly resolve pending promise
         worker.onmessage(<MessageEvent>{ data: data })
       })
-      it('should post a request back to reject with the error ' +
-      'from the called target method', () => {
+      it('should post a request back to reject with the corresponding error ',
+      () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
           method: 'reject',
@@ -96,9 +201,14 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
             name: 'Error',
             message: 'boom',
             stack: jasmine.anything()
-          } ] // uuid, result
+          } ] // uuid, error
         })
       })
+    })
+
+    describe('when the target method specification is ' +
+    '{ method: "getServiceMethods" }', () => {
+
     })
   })
   it('should ', () => {})
