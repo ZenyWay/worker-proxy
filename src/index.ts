@@ -75,7 +75,7 @@ export interface ServiceProxy<S extends Object> {
  * @interface
  */
 export interface WorkerServiceEvent extends MessageEvent {
-  data: WorkerServiceEventData
+  data: IndexedMethodCallSpec
 }
 
 /**
@@ -83,12 +83,15 @@ export interface WorkerServiceEvent extends MessageEvent {
  * @interface
  * data content of {WorkerServiceEvent}
  */
-export interface WorkerServiceEventData extends WorkerServiceMethodCall {
-  uuid: number
+export interface ProxyCallSpec extends MethodCallSpec {
   timeout?: number
 }
 
-export interface WorkerServiceMethodCall {
+export interface IndexedMethodCallSpec extends MethodCallSpec {
+  uuid: number
+}
+
+export interface MethodCallSpec {
   target?: 'service'
   method: string
   args?: any[]
@@ -169,7 +172,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
     // TODO setup this.worker.onerror ?
     this.calls = newIndexedQueue<Resolver>()
     this.service = this.call({  method: 'getServiceMethods' })
-    .then(methods => this.proxy(methods))
+    .then(methods => methods.reduce(this.proxyServiceMethod.bind(this), <S>{}))
   }
   /**
    * @private
@@ -191,20 +194,20 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   /**
    * @private
    * @method call place async method call to `Worker`
-   * @param  {WorkerServiceMethodCall} spec of method call
+   * @param  {ProxyCallSpec} spec of method call
    * @return {Promise<any>} result from call
    */
-  call (spec: WorkerServiceMethodCall): Promise<any> {
-    log('ServiceProxy.call spec =', spec)
-    const data = <WorkerServiceEventData>spec
+  call (spec: ProxyCallSpec): Promise<any> {
+    log('ServiceProxy.call', spec)
+    const data = <IndexedMethodCallSpec>Object.assign({}, spec)
     return new Promise((resolve, reject) => {
       data.uuid = this.calls.push({
         resolve: resolve,
         reject: reject
       })
-      this.worker.postMessage(spec)
+      this.worker.postMessage(data)
     })
-    .timeout(data.timeout || ServiceProxyClass.timeout)
+    .timeout(isNumber(spec.timeout) ? spec.timeout : ServiceProxyClass.timeout)
     .catch(Promise.TimeoutError, err => {
     	log('ServiceProxy.call uuid =', data.uuid, err)
       this.calls.pop(data.uuid)
@@ -214,21 +217,20 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   /**
    * @private
    * @method proxy
-   * @param  {string[]} methods
-   * @returns {S} proxied service object from list of methods
+   * proxy the named method on the given service proxy object
+   * @param {S} service
+   * @param {string} method
+   * @returns {S} service proxy object with added proxied method
    */
-  proxy (methods: string[]): S {
-  	const sp = this
-  	return methods.reduce((service, method) => {
-      service[method] = (function (/* arguments */) {
-        return this.call({
-          target: 'service',
-          method: method,
-          args: Array.prototype.slice.call(arguments) // proper format for postMessage
-        })
-      }).bind(this)
-      return service
-    }, <S>{})
+  proxyServiceMethod (service: S, method: string) {
+    service[method] = (function (/* arguments */) {
+      return this.call({
+        target: 'service',
+        method: method,
+        args: Array.prototype.slice.call(arguments) // proper format for postMessage (note: known to be slow)
+      })
+    }).bind(this)
+    return service
   }
   /**
    * @private
@@ -249,16 +251,6 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    * of pending call Promises, indexed by their `uuid`
    */
   calls: IndexedQueue<Resolver>
-}
-
-/**
- * @param {any} val
- * @return {val is WorkerServiceMethodCall}
- */
-function isValidServiceProxyMethodCall (val: any):
-val is WorkerServiceMethodCall {
-  return isObject(val) && isUndefined(val.target) &&
-  (val.method in [ 'resolve', 'reject' ]) && (!val.args || isArrayLike(val.args))
 }
 
 /**
@@ -285,29 +277,8 @@ function isFunction (val: any): val is Function {
   return typeof val === 'function'
 }
 
-function isString (val: any): val is string {
-  return typeof val === 'string'
-}
-
 function isNumber (val: any): val is number {
   return typeof val === 'number'
-}
-
-function isUndefined (val: any): val is undefined {
-  return typeof val === 'undefined'
-}
-
-/**
- * @private
- * @function assert
- * @param {boolean} val
- * @param {typeof Error} errType
- * @param {string} message
- * @throw {Error} of type `errType` with the given `message` when val is false
- */
-function assert (val: boolean, errType: typeof Error, message: string): void {
-  if (val) return
-  throw new errType(message)
 }
 
 export const newServiceProxy: ServiceProxyFactory =

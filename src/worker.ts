@@ -17,8 +17,7 @@ const log = debug('worker-proxy')
 import Promise = require('bluebird')
 import {
   WorkerServiceEvent,
-  WorkerServiceEventData,
-  WorkerServiceMethodCall
+  IndexedMethodCallSpec
 } from './'
 /**
  * @public
@@ -104,23 +103,23 @@ class WorkerServiceClass<S extends Object> {
   /**
    * @private
    * @method call target method as specified.
-   * @param {WorkerServiceEventData} spec
+   * @param {MethodCallSpec} spec
    * @return {Promise<any>} result from target method call
    * @error {Error} from target method call
    * @error {Error} "invalid argument" when `spec` is invalid
    */
-  callTargetMethod (spec: WorkerServiceEventData): Promise<any> {
+  callTargetMethod (spec: IndexedMethodCallSpec): Promise<any> {
     assert(Number.isSafeInteger(spec.uuid), TypeError, "invalid argument")
     return this.getTargetMethod(spec).apply(this, spec.args || [])
   }
   /**
    * @private
    * @method getTargetMethod
-   * @param {WorkerServiceMethodCall} spec
+   * @param {MethodCallSpec} spec
    * @return {Function} target method as specified in `spec`
    * @error {Error} "invalid argument" when `spec` is invalid
    */
-  getTargetMethod (spec: WorkerServiceMethodCall): Function {
+  getTargetMethod (spec: IndexedMethodCallSpec): Function {
     assert(isValidWorkerServiceMethodCall(spec), TypeError, "invalid argument")
     const target = isObject(this[spec.target]) ? this[spec.target] : this
     const method =
@@ -236,7 +235,7 @@ function isWorkerGlobalScope (val: any): val is WorkerGlobalScope {
  * @return {val is WorkerServiceMethodCall}
  */
 function isValidWorkerServiceMethodCall (val: any):
-val is WorkerServiceMethodCall {
+val is IndexedMethodCallSpec {
   return isObject(val) && (!val.target || isString(val.target)) &&
   isString(val.method) && (!val.args || isArrayLike(val.args))
 }
