@@ -48,17 +48,17 @@ export interface ServiceBinderSpec<S extends Object> {
   worker: WorkerGlobalScope
   /**
    * @public
-   * @prop {S extends Object} service
+   * @prop {S extends Object} service?
    */
   service: S
   /**
    * @public
-   * @prop {() => Promise<void>} onterminate `terminate` event handler.
+   * @prop {() => Promise<void>} onterminate? `terminate` event handler.
    * the returned Promise will be resolved or rejected in the main thread,
    * allowing the latter to to handle failure of service shut-down
    * before eventually forcing the `Worker` to terminate.
    */
-  onterminate: () => Promise<void>
+  onterminate?: () => (void | Promise<void>)
 }
 
 /**
@@ -72,6 +72,7 @@ class WorkerServiceClass<S extends Object> {
 	 */
 	static hookService: ServiceBinder =
   function <S extends Object>(spec: ServiceBinderSpec<S>) {
+    assert(isValidServiceBinderSpec(spec), TypeError, 'invalid argument')
   	const workerService = new WorkerServiceClass(spec)
   }
 	/**
@@ -81,11 +82,11 @@ class WorkerServiceClass<S extends Object> {
 	 */
 	constructor ({ worker, service, onterminate }: ServiceBinderSpec<S>) {
     this.worker = worker
-    this.worker.onmessage = this.onmessage.bind(this) // hook
+    worker.onmessage = this.onmessage.bind(this) // hook
 		log('worker.onmessage', 'hooked')
     this.onterminate = onterminate
     this.service = service
-    this.methods = getPropertyNames(service || {})
+    this.methods = getPropertyNames(service)
     .filter(val => isFunction(service[val]))
     log('WorkerService.methods', this.methods)
   }
@@ -110,8 +111,7 @@ class WorkerServiceClass<S extends Object> {
    */
   call (spec: WorkerServiceEventData): Promise<any> {
     assert(Number.isSafeInteger(spec.uuid), TypeError, "invalid argument")
-    spec.args = spec.args || []
-    return this.getTargetMethod(spec).apply(this, spec.args || [])
+    return this.getTargetMethod(spec).apply(this, spec.args)
   }
   /**
    * @private
@@ -122,7 +122,7 @@ class WorkerServiceClass<S extends Object> {
    */
   getTargetMethod (spec: WorkerServiceMethodCall): Function {
     assert(isValidWorkerServiceMethodCall(spec), TypeError, "invalid argument")
-    const { target, method, args } = spec
+    const { target, method } = spec
     const targetMethod = (isObject(this[target]) ? this[target] : this)[method]
     log('WorkerService.getTargetMethod', targetMethod)
     return isFunction(targetMethod) ? targetMethod : this.unknown
@@ -176,7 +176,7 @@ class WorkerServiceClass<S extends Object> {
    * @method onterminate `terminate` handler
    * @see {ServiceBinderSpec#onterminate}
    */
-  onterminate: () => Promise<void>
+  onterminate: () => (void | Promise<void>)
   /**
    * @private
    * @prop {WorkerGlobalScope} worker
@@ -204,39 +204,88 @@ class WorkerServiceClass<S extends Object> {
  * on `obj` and its prototype chain excluding `Object`
  */
 function getPropertyNames (obj: Object): string[] {
-	if (!obj || (typeof obj !== 'object') || Array.isArray(obj)) { return [] }
-
   const keys = Object.getOwnPropertyNames(obj)
   .filter(key => key !== 'constructor')
   .reduce((keys, key) => (keys[key] = true) && keys, this || {})
 
 	const proto = Object.getPrototypeOf(obj)
-	return (!proto || (proto.constructor === Object)) ?
+	return isObjectPrototype(proto) ?
   Object.getOwnPropertyNames(keys) : getPropertyNames.call(keys, proto)
 }
 /**
  * @private
+ * @function isValidServiceBinderSpec
  * @param {any} val
- * @return {boolean} true if val is a non-null Object
+ * @return {val is ServiceBinderSpec}
+ */
+function isValidServiceBinderSpec (val: any): val is ServiceBinderSpec<any> {
+  return isObject(val) && isWorkerGlobalScope(val.worker) &&
+  isObject(val.service) && (!val.onterminate || isFunction(val.onterminate))
+}
+/**
+ * @param {any} val
+ * @return {val is WorkerGlobalScope}
+ */
+function isWorkerGlobalScope (val: any): val is WorkerGlobalScope {
+  return isObject(val) && isFunction(val.postMessage)
+}
+/**
+ * @param {any} val
+ * @return {val is WorkerServiceMethodCall}
+ */
+function isValidWorkerServiceMethodCall (val: any):
+val is WorkerServiceMethodCall {
+  return isObject(val) && (!val.target || isString(val.target)) &&
+  isString(val.method) && isArrayLike(val.args)
+}
+/**
+ * @private
+ * @function isObjectPrototype
+ * @param {any} val
+ * @return {boolean} true if val is the root Object prototype
+ */
+function isObjectPrototype (val: any): boolean {
+  return isObject(val) && !isObject(Object.getPrototypeOf(val))
+}
+/**
+ * @private
+ * @function isObject
+ * @param {any} val
+ * @return {val is Object} true if val is a non-null Object
  */
 function isObject (val: any): val is Object {
   return val && (typeof val === 'object')
+}
+/**
+ * @private
+ * @function isArrayLike
+ * @param {any} val
+ * @return {val is Object} true if `val` is an {Object}
+ * with a {number} length property
+ */
+function isArrayLike (val: any): val is Object {
+  return isObject(val) && isNumber(val.length)
 }
 
 function isFunction (val: any): val is Function {
   return typeof val === 'function'
 }
 
-function isString (val: any): val is Object {
+function isString (val: any): val is string {
   return typeof val === 'string'
 }
 
-function isValidWorkerServiceMethodCall (val: any):
-val is WorkerServiceMethodCall {
-  return isObject(val) && isString(val.target) && isString(val.method) &&
-  Array.isArray(val.args)
+function isNumber (val: any): val is number {
+  return typeof val === 'number'
 }
-
+/**
+ * @private
+ * @function assert
+ * @param {boolean} val
+ * @param {typeof Error} errType
+ * @param {string} message
+ * @throw {Error} of type `errType` with the given `message` when val is false
+ */
 function assert (val: boolean, errType: typeof Error, message: string): void {
   if (val) return
   throw new errType(message)
