@@ -17,7 +17,7 @@ import { IndexGenerator } from '../../src/lib/indexed-queue'
 
 let index: IndexGenerator
 beforeEach(() => {
-  index = newIndexGenerator(0) // force internal index value to zero
+  index = newIndexGenerator() // internal index value defaults to zero
 })
 
 describe('factory newIndexGenerator(start?: number): IndexGenerator', () => {
