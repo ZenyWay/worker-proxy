@@ -280,9 +280,16 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    */
   timeout: number
 }
-
+/**
+ * @private
+ * @function isWorker
+ * @param {any} val?
+ * @return {val is Worker} true if `val` is an {Object}
+ * with `postMessage` and `terminate` methods
+ */
 function isWorker (val?: any): val is Worker {
   return isObject(val) && isFunction(val.postMessage)
+  && isFunction(val.terminate)
 }
 
 export const newServiceProxy: ServiceProxyFactory =
