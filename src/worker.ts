@@ -12,14 +12,14 @@
  * Limitations under the License.
  */
 ;
-import debug = require('debug')
-const log = debug('worker-proxy')
 import Promise = require('bluebird')
 import {
   WorkerServiceEvent,
-  WorkerServiceEventData,
-  WorkerServiceMethodCall
+  IndexedMethodCallSpec
 } from './'
+import { assert, isObject, isFunction, isArrayLike, isString } from './lib/utils'
+import debug = require('debug')
+const log = debug('worker-proxy')
 /**
  * @public
  * @interface ServiceBinder function that hooks a Service with a `Worker`
@@ -104,28 +104,29 @@ class WorkerServiceClass<S extends Object> {
   /**
    * @private
    * @method call target method as specified.
-   * @param {WorkerServiceEventData} spec
+   * @param {MethodCallSpec} spec
    * @return {Promise<any>} result from target method call
    * @error {Error} from target method call
    * @error {Error} "invalid argument" when `spec` is invalid
    */
-  callTargetMethod (spec: WorkerServiceEventData): Promise<any> {
+  callTargetMethod (spec: IndexedMethodCallSpec): Promise<any> {
     assert(Number.isSafeInteger(spec.uuid), TypeError, "invalid argument")
     return this.getTargetMethod(spec).apply(this, spec.args || [])
   }
   /**
    * @private
    * @method getTargetMethod
-   * @param {WorkerServiceMethodCall} spec
+   * @param {MethodCallSpec} spec
    * @return {Function} target method as specified in `spec`
    * @error {Error} "invalid argument" when `spec` is invalid
    */
-  getTargetMethod (spec: WorkerServiceMethodCall): Function {
+  getTargetMethod (spec: IndexedMethodCallSpec): Function {
     assert(isValidWorkerServiceMethodCall(spec), TypeError, "invalid argument")
-    const { target, method } = spec
-    const targetMethod = (isObject(this[target]) ? this[target] : this)[method]
-    log('WorkerService.getTargetMethod', targetMethod)
-    return isFunction(targetMethod) ? targetMethod : this.unknown
+    const target = isObject(this[spec.target]) ? this[spec.target] : this
+    const method =
+    isFunction(target[spec.method]) ? target[spec.method] : this.unknown
+    log('WorkerService.getTargetMethod', method)
+    return method
   }
   /**
    * @private
@@ -144,7 +145,7 @@ class WorkerServiceClass<S extends Object> {
    */
   resolve (uuid: number, res: any) {
   	log('WorkerService.resolve', res)
-    this.worker.postMessage({	method: 'resolve', args: [ uuid, res ] })
+    this.worker.postMessage({	uuid: uuid, method: 'resolve', args: [ res ] })
   }
   /**
    * @private
@@ -155,8 +156,9 @@ class WorkerServiceClass<S extends Object> {
   reject (uuid: number, err: Error) {
   	log('WorkerService.reject', err)
     this.worker.postMessage({
+      uuid: uuid,
     	method: 'reject',
-      args: [ uuid, {
+      args: [ {
         name: err.name,
         message: err.message,
         stack: err.stack
@@ -234,7 +236,7 @@ function isWorkerGlobalScope (val: any): val is WorkerGlobalScope {
  * @return {val is WorkerServiceMethodCall}
  */
 function isValidWorkerServiceMethodCall (val: any):
-val is WorkerServiceMethodCall {
+val is IndexedMethodCallSpec {
   return isObject(val) && (!val.target || isString(val.target)) &&
   isString(val.method) && (!val.args || isArrayLike(val.args))
 }
@@ -246,49 +248,6 @@ val is WorkerServiceMethodCall {
  */
 function isObjectPrototype (val: any): boolean {
   return isObject(val) && !isObject(Object.getPrototypeOf(val))
-}
-/**
- * @private
- * @function isObject
- * @param {any} val
- * @return {val is Object} true if val is a non-null Object
- */
-function isObject (val: any): val is Object {
-  return !!val && (typeof val === 'object')
-}
-/**
- * @private
- * @function isArrayLike
- * @param {any} val
- * @return {val is Object} true if `val` is an {Object}
- * with a {number} length property
- */
-function isArrayLike (val: any): val is Object {
-  return isObject(val) && isNumber(val.length)
-}
-
-function isFunction (val: any): val is Function {
-  return typeof val === 'function'
-}
-
-function isString (val: any): val is string {
-  return typeof val === 'string'
-}
-
-function isNumber (val: any): val is number {
-  return typeof val === 'number'
-}
-/**
- * @private
- * @function assert
- * @param {boolean} val
- * @param {typeof Error} errType
- * @param {string} message
- * @throw {Error} of type `errType` with the given `message` when val is false
- */
-function assert (val: boolean, errType: typeof Error, message: string): void {
-  if (val) return
-  throw new errType(message)
 }
 
 const hookService: ServiceBinder = WorkerServiceClass.hookService

@@ -12,58 +12,50 @@
  * Limitations under the License.
  */
 ;
-import {
-  newIndexedQueue,
-  IndexedQueue,
-  IndexGenerator
-} from '../../src/lib/indexed-queue'
+import newIndexedQueue,
+{ IndexedQueue, isIndexedQueue } from '../../src/lib/indexed-queue'
+import { IndexGenerator } from '../../src/lib/index-generator'
 
 let mockIndex: any
-let queue: IndexedQueue<any>
+let queue: IndexedQueue
 
 beforeEach(() => { // setup mockIndex
   let _index = 0
-  mockIndex = jasmine.createSpyObj('mockIndex', [ 'next', 'undo'])
+  mockIndex = jasmine.createSpyObj('mockIndex', [ 'next', 'value'])
   mockIndex.next.and.callFake(() => ++_index)
-  mockIndex.undo.and.callFake(() => --_index)
+  mockIndex.value.and.callFake(() => _index)
 })
 
 beforeEach(() => { // setup queue
   queue = newIndexedQueue({ index: <IndexGenerator>mockIndex })
   mockIndex.next.calls.reset()
-  mockIndex.undo.calls.reset()
+  mockIndex.value.calls.reset()
 })
 
-describe('factory newIndexedQueue <T>(opts?: { index?: IndexGenerator }): ' +
-'IndexedQueue<T>', () => {
+describe('factory newIndexedQueue (opts?: { index?: IndexGenerator }): ' +
+'IndexedQueue', () => {
   it('should return an instance of IndexedQueue', () => {
-    expect(queue.pop).toEqual(jasmine.any(Function))
-    expect(queue.push).toEqual(jasmine.any(Function))
-    expect(queue.has).toEqual(jasmine.any(Function))
-    expect(queue.length).toEqual(jasmine.any(Function))
+    expect(isIndexedQueue(queue)).toBe(true) // isIndexedQueue is validated separately
   })
-  it('should override the internal IndexGenerator with opts.index', () => {
+  it('should override the internal IndexGenerator with opts.index ' +
+  'when specified', () => {
     queue.push(42)
     expect(mockIndex.next).toHaveBeenCalled()
-    mockIndex.undo()
-    mockIndex.undo.calls.reset()
-    try { queue.push(42) } catch (e) {} // Error 'internal conflict ...'
-    expect(mockIndex.undo).toHaveBeenCalled()
   })
   it('should default to the internal IndexGenerator ' +
-  'when opts.index not specified', () => {
-    const queue = newIndexedQueue()
+  'when opts.index is not specified', () => {
+    const queue = newIndexedQueue() // not hooked to mock index
     expect(queue.pop(queue.push(42))).toBe(42)
   })
 })
 
-describe('IndexedQueue<T>', () => {
+describe('IndexedQueue', () => {
   describe('method has (index: number): boolean', () => {
     let index: number
     beforeEach(() => {
       index = queue.push(42)
       mockIndex.next.calls.reset()
-      mockIndex.undo.calls.reset()
+      mockIndex.value.calls.reset()
     })
     it('should return true when given an index that is queued', () => {
       expect(queue.has(index)).toBe(true)
@@ -80,10 +72,8 @@ describe('IndexedQueue<T>', () => {
     it('should not affect the value of the next index', () => {
       queue.has(42) // true
       expect(mockIndex.next).not.toHaveBeenCalled()
-      expect(mockIndex.undo).not.toHaveBeenCalled()
       queue.has(0) // false
       expect(mockIndex.next).not.toHaveBeenCalled()
-      expect(mockIndex.undo).not.toHaveBeenCalled()
     })
   })
 
@@ -101,15 +91,12 @@ describe('IndexedQueue<T>', () => {
       expect(queue.push.bind(queue)).toThrowError(ReferenceError)
     })
     it('should throw a "internal resource conflict for index ${index}" Error ' +
-    'without affecting the value of the next index ' +
     'when an entry is already queued at the generated index', () => {
-      const index = queue.push(42)
-      mockIndex.undo()
-      mockIndex.undo.calls.reset()
-      expect(queue.push.bind(queue, 42))
-      .toThrowError(Error, `internal resource conflict for index ${index}`)
-      expect(mockIndex.undo).toHaveBeenCalled()
-      expect(mockIndex.undo.calls.length).toBe(mockIndex.next.calls.length)
+      mockIndex.next.and.returnValue(1)
+      queue.push(42)
+      expect(queue.has(1)).toBe(true)
+      expect(queue.push.bind(queue, 'foo'))
+      .toThrowError(Error, `internal resource conflict for index 1`)
     })
   })
 
@@ -118,13 +105,14 @@ describe('IndexedQueue<T>', () => {
     beforeEach(() => {
       index = queue.push(42)
       mockIndex.next.calls.reset()
-      mockIndex.undo.calls.reset()
+      mockIndex.value.calls.reset()
     })
     it('should return the value from the queue at the given index', () => {
       expect(queue.pop(index)).toEqual(42)
     })
     it('should throw a ReferenceError when given a number index not in the queue',
     () => {
+      expect(queue.has(42)).toBe(false)
       expect(queue.pop.bind(queue, 42)).toThrowError(ReferenceError)
     })
     it('should throw a ReferenceError when given an index that is not a number',
@@ -135,12 +123,12 @@ describe('IndexedQueue<T>', () => {
       expect(queue.pop.bind(queue)).toThrowError(ReferenceError)
     })
     it('should not affect the value of the next index', () => {
+      expect(queue.has(index)).toBe(true)
       queue.pop(index) // 42
       expect(mockIndex.next).not.toHaveBeenCalled()
-      expect(mockIndex.undo).not.toHaveBeenCalled()
+      expect(queue.has(42)).toBe(false)
       try { queue.pop(42) } catch (e) {} // ReferenceError
       expect(mockIndex.next).not.toHaveBeenCalled()
-      expect(mockIndex.undo).not.toHaveBeenCalled()
     })
   })
 
@@ -161,5 +149,31 @@ describe('IndexedQueue<T>', () => {
       queue.pop(indexes.pop())
       expect(queue.length()).toBe(1)
     })
+  })
+})
+
+describe('isIndexedQueue (val: any): val is isIndexedQueue', () => {
+  let queue: any
+  beforeEach(() => {
+    queue = {
+      pop (index: number) { return 'foo' },
+      push (val: any) { return 42},
+      has (index: number) { return false },
+      length (index: number) { return 0 }
+    }
+  })
+  it('should return true when given a duck-type instance of {IndexedQueue}',
+  () => {
+    expect(isIndexedQueue(newIndexedQueue())).toBe(true)
+    expect(isIndexedQueue(queue)).toBe(true)
+  })
+  it('should return false when not given an instance of {IndexedQueue}',
+  () => {
+    expect(isIndexedQueue()).toBe(false)
+    expect(isIndexedQueue('foo')).toBe(false)
+    delete queue.length
+    expect(isIndexedQueue(queue)).toBe(false)
+    queue.length = 42
+    expect(isIndexedQueue(queue)).toBe(false)
   })
 })

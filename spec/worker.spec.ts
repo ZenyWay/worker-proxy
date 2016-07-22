@@ -153,12 +153,13 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       'with an "invalid argument" TypeError', () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'reject',
-          args: [ 42, {
+          args: [ {
             name: 'TypeError',
             message: 'invalid argument',
             stack: jasmine.anything()
-          } ] // uuid, error
+          } ]
         })
       })
     })
@@ -172,12 +173,13 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       'with an "invalid argument" TypeError', () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: Number.MAX_VALUE,
           method: 'reject',
-          args: [ Number.MAX_VALUE, {
+          args: [ {
             name: 'TypeError',
             message: 'invalid argument',
             stack: jasmine.anything()
-          } ] // uuid, error
+          } ]
         })
       })
     })
@@ -191,12 +193,13 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       'with an "invalid argument" TypeError', () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'reject',
-          args: [ 42, {
+          args: [ {
             name: 'TypeError',
             message: 'invalid argument',
             stack: jasmine.anything()
-          } ] // uuid, error
+          } ]
         })
       })
     })
@@ -210,12 +213,13 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       'with an "invalid argument" TypeError', () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'reject',
-          args: [ 42, {
+          args: [ {
             name: 'TypeError',
             message: 'invalid argument',
             stack: jasmine.anything()
-          } ] // uuid, error
+          } ]
         })
       })
     })
@@ -229,12 +233,13 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'reject',
-          args: [ 42, {
+          args: [ {
             name: 'Error',
             message: 'unknown method',
             stack: jasmine.anything()
-          } ] // uuid, error
+          } ]
         })
       })
     })
@@ -248,12 +253,13 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'reject',
-          args: [ 42, {
+          args: [ {
             name: 'Error',
             message: 'unknown method',
             stack: jasmine.anything()
-          } ] // uuid, error
+          } ]
         })
       })
     })
@@ -265,8 +271,9 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       it('should post a request back to resolve to the returned value', () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'resolve',
-          args: [ 42, 'foo' ] // uuid, result
+          args: [ 'foo' ]
         })
       })
     })
@@ -279,8 +286,9 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       it('should post a request back to resolve to the resolved value', () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'resolve',
-          args: [ 42, 'foo' ] // uuid, result
+          args: [ 'foo' ]
         })
       })
     })
@@ -296,12 +304,13 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'reject',
-          args: [ 42, {
+          args: [ {
             name: 'Error',
             message: 'boom',
             stack: jasmine.anything()
-          } ] // uuid, error
+          } ]
         })
       })
     })
@@ -317,12 +326,13 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'reject',
-          args: [ 42, {
+          args: [ {
             name: 'Error',
             message: 'boom',
             stack: jasmine.anything()
-          } ] // uuid, error
+          } ]
         })
       })
     })
@@ -338,8 +348,9 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
       () => {
         expect(worker.postMessage).toHaveBeenCalledTimes(1)
         expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: 42,
           method: 'resolve',
-          args: [ 42, [ 'asyncwork', 'syncwork', 'stop' ] ] // uuid, result
+          args: [ [ 'asyncwork', 'syncwork', 'stop' ] ] // uuid, result
         })
       })
     })

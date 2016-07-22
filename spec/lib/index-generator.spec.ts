@@ -12,8 +12,8 @@
  * Limitations under the License.
  */
 ;
-import newIndexGenerator from '../../src/lib/index-generator'
-import { IndexGenerator } from '../../src/lib/indexed-queue'
+import newIndexGenerator,
+{ isIndexGenerator, IndexGenerator } from '../../src/lib/index-generator'
 
 let index: IndexGenerator
 beforeEach(() => {
@@ -22,21 +22,21 @@ beforeEach(() => {
 
 describe('factory newIndexGenerator(start?: number): IndexGenerator', () => {
   it('should return a new instance of IndexGenerator', () => {
-    expect(index.next).toEqual(jasmine.any(Function))
-    expect(index.undo).toEqual(jasmine.any(Function))
+    // isIndexGenerator is validated separately
+    expect(isIndexGenerator(index)).toBe(true)
   })
   it('should initialize the index to the given start value when defined', () => {
     index = newIndexGenerator(42)
-    index.next()
-    expect(index.undo()).toBe(42)
+    // index#value is validated separately
+    expect(index.value()).toBe(42)
   })
   it('should initialize the index to zero when not given a start value', () => {
-    index.next()
-    expect(index.undo()).toBe(0)
+    // index#value is validated separately
+    expect(index.value()).toBe(0)
   })
 })
 
-describe('IndexGenerator', () => {
+describe('interface IndexGenerator', () => {
   describe('next (): number', () => {
     it('should return a safe integer', () => {
       index = newIndexGenerator(Number.MAX_VALUE)
@@ -48,16 +48,32 @@ describe('IndexGenerator', () => {
       expect(index.next()).not.toBe(0)
     })
   })
-  describe('undo (): number', () => {
+  describe('value (): number', () => {
     it('should return a safe integer', () => {
       index = newIndexGenerator(Number.MAX_VALUE)
-      expect(Number.isSafeInteger(index.undo())).toBe(true)
+      expect(Number.isSafeInteger(index.value())).toBe(true)
       index = newIndexGenerator(-Number.MAX_VALUE)
-      expect(Number.isSafeInteger(index.undo())).toBe(true)
+      expect(Number.isSafeInteger(index.value())).toBe(true)
     })
-    it('should undo the previous call to next', () => {
-      index.next()
-      expect(index.undo()).toBe(0)
+    it('should not affect the index value', () => {
+      expect(index.value()).toBe(index.value())
+      expect(index.next()).toBe(newIndexGenerator().next())
     })
+  })
+})
+
+describe('isIndexGenerator (val: any): val is IndexGenerator', () => {
+  it('should return true when given a duck-type instance of {IndexGenerator}',
+  () => {
+    expect(isIndexGenerator(newIndexGenerator())).toBe(true)
+    expect(isIndexGenerator({ next () { return 0 } })).toBe(true)
+  })
+  it('should return false when not given an instance of {IndexGenerator}',
+  () => {
+    expect(isIndexGenerator()).toBe(false)
+    expect(isIndexGenerator('foo')).toBe(false)
+    expect(isIndexGenerator({ next: 'foo' })).toBe(false)
+    expect(isIndexGenerator([ function next () { return 0 } ])).toBe(false)
+    expect(isIndexGenerator({ next () { return 'foo' } })).toBe(false)
   })
 })
