@@ -22,6 +22,7 @@ beforeEach(() => {
   newServiceProxy<Service>('./TODO')
 })
 
-describe('factory newServiceProxy<S extends Object>(path: string, opts?: ServiceProxyOpts): ServiceProxy<S>', () => {
+describe('factory newServiceProxy<S extends Object>(path: string, opts?: ' +
+'ServiceProxyOpts): ServiceProxy<S>', () => {
   // TODO
 })

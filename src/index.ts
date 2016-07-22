@@ -16,8 +16,10 @@ import debug = require('debug')
 const log = debug('worker-proxy')
 // import assert = require('assert')
 import Promise = require('bluebird')
-import { newIndexedQueue, IndexedQueue } from './lib/indexed-queue'
+import newIndexedQueue,
+{ IndexedQueue, isIndexedQueue } from './lib/indexed-queue'
 import hookService from './worker'
+import { isObject, isArrayLike, isFunction, isNumber } from './lib/utils'
 
 export { hookService }
 
@@ -42,6 +44,16 @@ export interface ServiceProxyOpts {
    * @prop {number} timeout? for calls to `Worker`
    */
   timeout?: number
+  /**
+   * @public
+   * @prop {Worker} worker
+   */
+  worker?: Worker
+  /**
+   * @public
+   * @prop {IndexedQueue} queue
+   */
+  queue?: IndexedQueue
 }
 /**
  * @public
@@ -121,15 +133,19 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
 	 */
 	static newInstance <S extends Object>(path: string,
   opts?: ServiceProxyOpts): ServiceProxy<S> {
-    ServiceProxyClass.timeout = opts && opts.timeout || ServiceProxyClass.timeout
+    const specs = opts || {}
+    specs.timeout =
+    isNumber(specs.timeout) ? specs.timeout : ServiceProxyClass.timeout
+    specs.worker = isWorker(specs.worker) ? specs.worker : new Worker(path)
+    specs.queue = isIndexedQueue(specs.queue) ? specs.queue : newIndexedQueue()
 
-  	const sp = new ServiceProxyClass(path)
-    log('ServiceProxyClass.newInstance', sp)
+  	const proxy = new ServiceProxyClass(specs)
+    log('ServiceProxyClass.newInstance', proxy)
 
   	return <ServiceProxy<S>>({ // revealing module
-      service: sp.service,
-      kill: sp.kill.bind(sp),
-    	terminate: sp.terminate.bind(sp)
+      service: proxy.service,
+      kill: proxy.kill.bind(proxy),
+    	terminate: proxy.terminate.bind(proxy)
     })
   }
   /**
@@ -163,16 +179,18 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   static timeout = 3 * 60 * 1000 // ms
 	/**
    * @private
-   * @constructor
-	 * @param {string} path of `Worker` string
+   * @constructor {ServiceProxyClass}
+	 * @param {Worker} instance
+   * @param {ServiceProxyOpts}
 	 */
-	constructor (path: string) {
-  	this.worker = new Worker(path)
+	constructor (spec: ServiceProxyOpts) {
+  	this.worker = spec.worker
     this.worker.onmessage = this.onmessage.bind(this)
     // TODO setup this.worker.onerror ?
-    this.calls = newIndexedQueue<Resolver>()
+    this.calls = spec.queue
+    this.timeout = spec.timeout
     this.service = this.call({  method: 'getServiceMethods' })
-    .then(methods => methods.reduce(this.proxyServiceMethod.bind(this), <S>{}))
+    .call('reduce', this.proxyServiceMethod.bind(this), <S>{})
   }
   /**
    * @private
@@ -186,14 +204,18 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   onmessage (event: WorkerServiceEvent) {
     if (!this.calls.has(event.data.uuid)) { return } // ignore invalid uuid
     const call = this.calls.pop(event.data.uuid)
-    if (!isFunction(call[event.data.method])) { return } // ignore unknown method
+    // ignore unknown method (Promise may timeout)
+    if (!isObject(call) || !isFunction(call[event.data.method])) { return }
     log('WorkerService.onmessage target method', event.data.method)
+    // Function#apply needs array like object
     const args = isArrayLike(event.data.args) ? event.data.args : []
-    call[event.data.method].apply(undefined, args)
+    call[event.data.method].apply(undefined, args) // resolve or reject Promise
   }
   /**
    * @private
-   * @method call place async method call to `Worker`
+   * @method call place async method call to `Worker`.
+   * the call will timeout as defined by `spec.timeout` or
+   * by the value specified at instantiation.
    * @param  {ProxyCallSpec} spec of method call
    * @return {Promise<any>} result from call
    */
@@ -207,10 +229,10 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
       })
       this.worker.postMessage(data)
     })
-    .timeout(isNumber(spec.timeout) ? spec.timeout : ServiceProxyClass.timeout)
+    .timeout(this.timeout)
     .catch(Promise.TimeoutError, err => {
     	log('ServiceProxy.call uuid =', data.uuid, err)
-      this.calls.pop(data.uuid)
+      this.calls.has(data.uuid) && this.calls.pop(data.uuid)
       return Promise.reject(err)
     })
   }
@@ -227,7 +249,8 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
       return this.call({
         target: 'service',
         method: method,
-        args: Array.prototype.slice.call(arguments) // proper format for postMessage (note: known to be slow)
+        // postMessage can't handle arguments type (note: slice known to be slow)
+        args: Array.prototype.slice.call(arguments)
       })
     }).bind(this)
     return service
@@ -247,38 +270,19 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   worker: Worker
   /**
    * @private
-   * @prop {IndexedQueue<Resolver>} calls queue of {Resolver} methods
+   * @prop {IndexedQueue} calls queue of {Resolver} methods
    * of pending call Promises, indexed by their `uuid`
    */
-  calls: IndexedQueue<Resolver>
+  calls: IndexedQueue
+  /**
+   * @private
+   * @prop {number} timeout
+   */
+  timeout: number
 }
 
-/**
- * @private
- * @function isObject
- * @param {any} val
- * @return {val is Object} true if val is a non-null Object
- */
-function isObject (val: any): val is Object {
-  return !!val && (typeof val === 'object')
-}
-/**
- * @private
- * @function isArrayLike
- * @param {any} val
- * @return {val is Object} true if `val` is an {Object}
- * with a {number} length property
- */
-function isArrayLike (val: any): val is Object {
-  return isObject(val) && isNumber(val.length)
-}
-
-function isFunction (val: any): val is Function {
-  return typeof val === 'function'
-}
-
-function isNumber (val: any): val is number {
-  return typeof val === 'number'
+function isWorker (val?: any): val is Worker {
+  return isObject(val) && isFunction(val.postMessage)
 }
 
 export const newServiceProxy: ServiceProxyFactory =

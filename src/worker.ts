@@ -12,13 +12,14 @@
  * Limitations under the License.
  */
 ;
-import debug = require('debug')
-const log = debug('worker-proxy')
 import Promise = require('bluebird')
 import {
   WorkerServiceEvent,
   IndexedMethodCallSpec
 } from './'
+import { assert, isObject, isFunction, isArrayLike, isString } from './lib/utils'
+import debug = require('debug')
+const log = debug('worker-proxy')
 /**
  * @public
  * @interface ServiceBinder function that hooks a Service with a `Worker`
@@ -247,49 +248,6 @@ val is IndexedMethodCallSpec {
  */
 function isObjectPrototype (val: any): boolean {
   return isObject(val) && !isObject(Object.getPrototypeOf(val))
-}
-/**
- * @private
- * @function isObject
- * @param {any} val
- * @return {val is Object} true if val is a non-null Object
- */
-function isObject (val: any): val is Object {
-  return !!val && (typeof val === 'object')
-}
-/**
- * @private
- * @function isArrayLike
- * @param {any} val
- * @return {val is Object} true if `val` is an {Object}
- * with a {number} length property
- */
-function isArrayLike (val: any): val is Object {
-  return isObject(val) && isNumber(val.length)
-}
-
-function isFunction (val: any): val is Function {
-  return typeof val === 'function'
-}
-
-function isString (val: any): val is string {
-  return typeof val === 'string'
-}
-
-function isNumber (val: any): val is number {
-  return typeof val === 'number'
-}
-/**
- * @private
- * @function assert
- * @param {boolean} val
- * @param {typeof Error} errType
- * @param {string} message
- * @throw {Error} of type `errType` with the given `message` when val is false
- */
-function assert (val: boolean, errType: typeof Error, message: string): void {
-  if (val) return
-  throw new errType(message)
 }
 
 const hookService: ServiceBinder = WorkerServiceClass.hookService
