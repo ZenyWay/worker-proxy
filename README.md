@@ -126,7 +126,7 @@ proxy.service
 ```
 
 # <a name="contributing"></a> CONTRIBUTING
-see the [contribution guidelines](./CONTRIBUTING)
+see the [contribution guidelines](./CONTRIBUTING.md)
 
 # <a name="license"></a> LICENSE
 Copyright 2016 Stéphane M. Catala
