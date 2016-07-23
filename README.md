@@ -109,7 +109,7 @@ to shut down the service and terminate the Worker,
 the proxy's `terminate` method can be called as in this example.
 
 ```ts
-import { newServiceProxy } from 'worker-proxy'
+import newServiceProxy from 'worker-proxy'
 import { Service } from 'my-service' // only import the interface for casting
 const log = console.log.bind(console)
 

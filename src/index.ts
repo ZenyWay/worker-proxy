@@ -26,13 +26,13 @@ export { hookService }
 /**
  * @public
  * @factory ServiceProxyFactory
- * @param {string} path of `Worker` script
+ * @param {string|Worker} worker path of {Worker} script, or {Worker} instance
  * @param {ServiceProxyOpts} opts? {ServiceProxy} configuration options
  * @generic {S extends Object} service interface
  * @return {Promise<ServiceProxy<S>>}
  */
 export interface ServiceProxyFactory {
-  <S extends Object>(path: string, opts?: ServiceProxyOpts): ServiceProxy<S>
+  <S extends Object>(worker: string|Worker, opts?: ServiceProxyOpts): ServiceProxy<S>
 }
 /**
  * @public
@@ -44,11 +44,6 @@ export interface ServiceProxyOpts {
    * @prop {number} timeout? for calls to `Worker`
    */
   timeout?: number
-  /**
-   * @public
-   * @prop {Worker} worker
-   */
-  worker?: Worker
   /**
    * @public
    * @prop {IndexedQueue} queue
@@ -109,6 +104,24 @@ export interface MethodCallSpec {
   args?: any[]
 }
 
+interface ServiceProxySpecs {
+  /**
+   * @public
+   * @prop {number} timeout for calls to `Worker`
+   */
+  timeout: number
+  /**
+   * @public
+   * @prop {Worker} worker
+   */
+  worker: Worker
+  /**
+   * @public
+   * @prop {IndexedQueue} queue
+   */
+  queue: IndexedQueue
+}
+
 /**
  * @private
  * @interface Resolver
@@ -131,12 +144,12 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    * @generic {S extends Object} service interface
 	 * @return {Promise<ServiceProxy<S>>}
 	 */
-	static newInstance <S extends Object>(path: string,
+	static newInstance <S extends Object>(worker: string,
   opts?: ServiceProxyOpts): ServiceProxy<S> {
-    const specs = opts || {}
+    const specs = <ServiceProxySpecs>(opts || {})
     specs.timeout =
     isNumber(specs.timeout) ? specs.timeout : ServiceProxyClass.timeout
-    specs.worker = isWorker(specs.worker) ? specs.worker : new Worker(path)
+    specs.worker = isWorker(worker) ? worker : new Worker(worker)
     specs.queue = isIndexedQueue(specs.queue) ? specs.queue : newIndexedQueue()
 
   	const proxy = new ServiceProxyClass(specs)
@@ -183,7 +196,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
 	 * @param {Worker} instance
    * @param {ServiceProxyOpts}
 	 */
-	constructor (spec: ServiceProxyOpts) {
+	constructor (spec: ServiceProxySpecs) {
   	this.worker = spec.worker
     this.worker.onmessage = this.onmessage.bind(this)
     // TODO setup this.worker.onerror ?
@@ -292,5 +305,5 @@ function isWorker (val?: any): val is Worker {
   && isFunction(val.terminate)
 }
 
-export const newServiceProxy: ServiceProxyFactory =
-ServiceProxyClass.newInstance
+const newServiceProxy: ServiceProxyFactory = ServiceProxyClass.newInstance
+export default newServiceProxy

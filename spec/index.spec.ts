@@ -12,14 +12,25 @@
  * Limitations under the License.
  */
 ;
-import { newServiceProxy } from '../src/'
+import newServiceProxy, { ServiceProxy } from '../src/'
 
 interface Service {
-
+  syncwork: (foo: string, bar: string) => number
+  asyncwork: (foo: string, bar: string) => Promise<number>
+  stop: () => void
 }
 
+let worker: any
+let queue: any
+let proxy: ServiceProxy<Service>
+
+beforeEach(() => { // mocks
+  worker = jasmine.createSpyObj('worker', [ 'postMessage', 'terminate' ])
+  queue = jasmine.createSpyObj('queue', [ 'pop', 'push', 'length', 'has' ])
+})
+
 beforeEach(() => {
-  newServiceProxy<Service>('./TODO')
+  newServiceProxy<Service>(worker, { queue: queue })
 })
 
 describe('factory newServiceProxy<S extends Object>(path: string, opts?: ' +
