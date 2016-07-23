@@ -3,6 +3,7 @@
  - [Support enquiries](#support)
  - [Issues and Feature Requests](#issues)
  - [Code submission process](#submit)
+ - [Test suite](#tests)
 
 ## <a name="support"></a> Support enquiries
 Please address all support enquiries over the dedicated
@@ -114,10 +115,35 @@ This is required both in the contributor's own interest,
 and that of the community relying on this project,
 as it clarifies the conditions under which the contribution is made.
 
-### Test suite
-This project's test suite builds on a [Karma](https://karma-runner.github.io/)/[Jasmine](https://jasmine.github.io/) test framework.
-The [Karma](https://karma-runner.github.io/) test runner supports testing in multiple browsers: Chrome, FireFox, Safari, etc.
+### <a name="tests"></a> Test suite
+The test suites are specified by `*.spec.ts` files in the `spec/` folder.
 
-[CommonJS](http://www.commonjs.org/) dependencies are bundled with [Browserify](http://browserify.org/) for the browser.
+#### run test suite
+This project's test suite builds on a
+[Karma](https://karma-runner.github.io/)/[Jasmine](https://jasmine.github.io/) test framework.
 
+The [Karma](https://karma-runner.github.io/) test runner is configured
+for testing in multiple browsers: Chrome, FireFox, Safari, etc.
+[CommonJS](http://www.commonjs.org/) dependencies are bundled with
+[Browserify](http://browserify.org/) for the browser.
+
+```bash
+npm test
+```
+
+#### CI
 CI testing runs on [TravisCI](https://travis-ci.org/ZenyWay/worker-proxy).
+
+#### test coverage
+Test coverage reporting is produced with
+[Istanbul](https://www.npmjs.com/package/istanbul):
+```bash
+npm test:coverage
+```
+
+#### debugging
+Instead of running the test suite once with `npm test`, run it in 'watch' mode
+and debug in the browser:
+```bash
+npm run test:debug
+```
