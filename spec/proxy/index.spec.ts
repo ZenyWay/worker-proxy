@@ -47,16 +47,16 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
       const returnValues = {
         getServiceMethods: {
           method: 'resolve',
-          args: [ 'foo' ]
+          args: [ [ 'foo' ] ]
         },
         foo: {
           method: 'resolve',
-          args: 'foo'
+          args: [ 'foo' ]
         }
       }
       this.onmessage = (event: MessageEvent) => {
-        const data =
-        Object.assign({}, event.data, returnValues[event.data.method])
+        const data = returnValues[event.data.method]
+        data.uuid = event.data.uuid
         this.postMessage(data)
       }
     }
