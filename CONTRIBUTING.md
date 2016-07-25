@@ -118,6 +118,11 @@ as it clarifies the conditions under which the contribution is made.
 ### <a name="tests"></a> Test suite
 The test suites are specified by `*.spec.ts` files in the `spec/` folder.
 
+Note that the proxy code and the worker code operate in different global scopes:
+the proxy code's global scope is defined by the TypeScript `dom` lib,
+while that of the worker by the `webworker` lib.
+Both libs are mutually exclusive, therefore both parts are transpiled separately.
+
 #### run the test suite
 This project's test suite builds on a
 [Karma](https://karma-runner.github.io/)/[Jasmine](https://jasmine.github.io/) test framework.
@@ -130,11 +135,6 @@ for testing in multiple browsers: Chrome, FireFox, Safari, etc.
 ```bash
 npm test
 ```
-
-Note that the proxy code and the worker code require separate global namespaces:
-the proxy code's global space is defined by the TypeScript `dom` lib,
-while that of the worker by the `webworker` lib.
-Both libs are mutually exclusive, therefore both parts are transpiled separately.
 
 The `test` script actually runs two dedicated test scripts:
 * to limit testing to the proxy:
