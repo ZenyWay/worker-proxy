@@ -19,7 +19,7 @@ import Promise = require('bluebird')
 import newIndexedQueue,
 { IndexedQueue, isIndexedQueue } from './indexed-queue'
 //import hookService from '../worker/worker'
-import { isObject, isArrayLike, isFunction, isNumber } from '../utils'
+import { isObject, isArrayLike, isFunction, isString, isNumber } from '../utils'
 
 //export { hookService }
 
@@ -146,11 +146,12 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
 	 */
 	static newInstance <S extends Object>(worker: string,
   opts?: ServiceProxyOpts): ServiceProxy<S> {
-    const specs = <ServiceProxySpecs>(opts || {})
+    const specs = <ServiceProxySpecs>{}
     specs.timeout =
-    isNumber(specs.timeout) ? specs.timeout : ServiceProxyClass.timeout
-    specs.worker = isWorker(worker) ? worker : new Worker(worker)
-    specs.queue = isIndexedQueue(specs.queue) ? specs.queue : newIndexedQueue()
+    opts && isNumber(opts.timeout) ? opts.timeout : ServiceProxyClass.timeout
+    specs.worker = isWorker(worker) ? worker : newWorker(worker)
+    specs.queue =
+    opts && isIndexedQueue(opts.queue) ? opts.queue : newIndexedQueue()
 
   	const proxy = new ServiceProxyClass(specs)
     log('ServiceProxyClass.newInstance', proxy)
@@ -292,6 +293,18 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    * @prop {number} timeout
    */
   timeout: number
+}
+/**
+ * @param {any} val?
+ * @return {Worker} from `val` if a valid {string} path to a worker script
+ * @error {TypeError} 'invalid argument' when `val` is not a valid URL {string},
+ * or, in _some_ user agents, if the URL violates the same-origin policy.
+ */
+function newWorker (val?: any): Worker {
+  try {
+    if (isString(val)) { return new Worker(val) }
+  } catch (err) { /* DOMException in some user agents */ }
+  throw new TypeError('invalid argument')
 }
 /**
  * @private
