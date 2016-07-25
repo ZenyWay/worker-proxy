@@ -118,7 +118,7 @@ as it clarifies the conditions under which the contribution is made.
 ### <a name="tests"></a> Test suite
 The test suites are specified by `*.spec.ts` files in the `spec/` folder.
 
-#### run test suite
+#### run the test suite
 This project's test suite builds on a
 [Karma](https://karma-runner.github.io/)/[Jasmine](https://jasmine.github.io/) test framework.
 
@@ -131,19 +131,47 @@ for testing in multiple browsers: Chrome, FireFox, Safari, etc.
 npm test
 ```
 
+Note that the proxy code and the worker code require separate global namespaces:
+the proxy code's global space is defined by the TypeScript `dom` lib,
+while that of the worker by the `webworker` lib.
+Both libs are mutually exclusive, therefore both parts are transpiled separately.
+
+The `test` script actually runs two dedicated test scripts:
+* to limit testing to the proxy:
+```bash
+npm run test:proxy
+```
+* to limit testing to the worker:
+```bash
+npm run test:worker
+```
+
 #### CI
 CI testing runs on [TravisCI](https://travis-ci.org/ZenyWay/worker-proxy).
 
-#### test coverage
+#### test coverage reporting
 Test coverage reporting is produced with
 [Istanbul](https://www.npmjs.com/package/istanbul):
 ```bash
-npm test:coverage
+npm run test:coverage
+```
+* to limit coverage reporting to the proxy:
+```bash
+npm run test:coverage:proxy && npm run test:coverage:serve
+```
+* to limit coverage reporting to the worker:
+```bash
+npm run test:coverage:worker && npm run test:coverage:serve
 ```
 
 #### debugging
-Instead of running the test suite once with `npm test`, run it in 'watch' mode
-and debug in the browser:
+Instead of running the test suite once with `npm test`,
+run it in 'watch' mode and debug in the browser.
+* to debug the proxy:
 ```bash
-npm run test:debug
+npm run test:debug:proxy
+```
+* to debug the worker
+```bash
+npm run test:debug:worker
 ```

@@ -12,11 +12,15 @@
  * Limitations under the License.
  */
 ;
-import hookService,
-{ ServiceBinder, ServiceBinderSpec } from './worker'
-import newServiceProxy,
-{ ServiceProxyFactory, ServiceProxyOpts, ServiceProxy } from './proxy'
-export {
-  newServiceProxy, ServiceProxyFactory, ServiceProxyOpts, ServiceProxy,
-  hookService, ServiceBinder, ServiceBinderSpec
+var assign = require('tslib').__assign
+
+module.exports = function (config) {
+  'use strict'
+  require('./karma.conf.js')(config) // setup test config
+  require('../support/karma-coverage.conf.js')(config) // add coverage
+  config.set({ // overwrites arrays
+    coverageReporter: assign({}, config.coverageReporter, {
+      dir: '../reports/coverage/proxy'
+    })
+  })
 }

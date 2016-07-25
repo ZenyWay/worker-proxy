@@ -1,3 +1,17 @@
+/**
+ * Copyright 2016 Stephane M. Catala
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * Limitations under the License.
+ */
+;
 module.exports = function (config) {
   'use strict'
   config.set({
@@ -10,10 +24,6 @@ module.exports = function (config) {
         flags: [ '--no-sandbox' ]
       }
     },
-    files: [
-      'spec/lib/*.spec.ts',
-      'spec/*.spec.ts'
-    ],
     autoWatch: true,
     singleRun: true,
     plugins: [
@@ -26,14 +36,10 @@ module.exports = function (config) {
       'karma-junit-reporter' // output to xml file
     ],
     preprocessors: {
-      'spec/**/*.{js,ts}': [ 'browserify' ]
+      '*.{js,ts}': [ 'browserify' ]
     },
     browserify: { // https://github.com/nikku/karma-browserify#plugins
-      debug: true,
-      plugin: [
-        [ 'tsify', { 'project': 'spec' } ],
-        [ 'proxyquire-universal' ]
-      ] /*,
+      debug: true/*,
       configure: function (bundle) {
         bundle.on('prebundle', function () {
           bundle.require('_cut_', { expose: '' }) // stub dependencies
@@ -44,7 +50,7 @@ module.exports = function (config) {
       'spec', 'kjhtml', 'junit'
     ],
     junitReporter: {
-      outputDir: 'spec/reports',
+      outputDir: '../reports',
       outputFile: undefined, // filename based on browser name
       suite: 'unit'
     },

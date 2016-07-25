@@ -12,8 +12,8 @@
  * Limitations under the License.
  */
 ;
-import newServiceProxy, { ServiceProxy } from '../src/'
-
+debugger
+import newServiceProxy, { ServiceProxy } from '../../src/proxy'
 interface Service {
   syncwork: (foo: string, bar: string) => number
   asyncwork: (foo: string, bar: string) => Promise<number>
@@ -33,7 +33,31 @@ beforeEach(() => {
   newServiceProxy<Service>(worker, { queue: queue })
 })
 
-describe('factory newServiceProxy<S extends Object>(path: string, opts?: ' +
+describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?: ' +
 'ServiceProxyOpts): ServiceProxy<S>', () => {
-  // TODO
+  describe('when given a {string} path to a worker script', () => {
+    let service: any
+    beforeEach((done) => {
+      const worker = function () {
+        this.onmessage = (event: MessageEvent) => {
+          event.data.method = 'resolve'
+          event.data.args = [ [ 'foo' ] ]
+          this.postMessage(event.data)
+        }
+      }
+      const script = `(${worker}())`
+      const blob = new Blob([ script ], { type: 'text/javascript' })
+      const url = URL.createObjectURL(blob) // requires "dom" lib declaration in tsconfig.json
+      const proxy = newServiceProxy(url)
+      proxy.service
+      .then(_service => (service = _service))
+      .then(setTimeout.bind(undefined, done))
+    })
+    it('should instantiate and proxy the corresponding worker', () => {
+      expect(service).toEqual({ 'foo': jasmine.any(Function) })
+    })
+    it('should', () => {
+
+    })
+  })
 })

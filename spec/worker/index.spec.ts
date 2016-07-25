@@ -12,8 +12,7 @@
  * Limitations under the License.
  */
 ;
-import hookService from '../src/worker'
-import { pass, fail } from './support/jasmine-bluebird'
+import hookService from '../../src/worker'
 
 let worker: WorkerGlobalScope
 let service: {

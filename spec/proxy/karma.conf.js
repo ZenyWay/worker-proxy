@@ -12,11 +12,20 @@
  * Limitations under the License.
  */
 ;
-import hookService,
-{ ServiceBinder, ServiceBinderSpec } from './worker'
-import newServiceProxy,
-{ ServiceProxyFactory, ServiceProxyOpts, ServiceProxy } from './proxy'
-export {
-  newServiceProxy, ServiceProxyFactory, ServiceProxyOpts, ServiceProxy,
-  hookService, ServiceBinder, ServiceBinderSpec
+var assign = require('tslib').__assign
+
+module.exports = function (config) {
+  'use strict'
+  require('../support/karma.conf.js')(config) // setup base config
+  config.set({ // overwrites arrays
+    files: [
+      '*.spec.ts'
+    ],
+    browserify: assign({}, config.browserify, {
+      plugin: (config.browserify.plugin || []).concat([
+        [ 'tsify', { 'project': 'spec/proxy' } ]
+//        [ 'proxyquire-universal' ]
+      ])
+    })
+  })
 }
