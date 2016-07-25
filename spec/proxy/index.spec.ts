@@ -42,16 +42,22 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
   let service: any // proxied service object
   let error: Error
   beforeEach(() => { // mock worker script
-    // resolves calls to predefined values, ignoring target property
+    // resolve/reject calls as predefined, ignoring data.target property
     workerFn = function () {
       const returnValues = {
-        getServiceMethods: [ 'foo' ],
-        foo: 'foo'
+        getServiceMethods: {
+          method: 'resolve',
+          args: [ 'foo' ]
+        },
+        foo: {
+          method: 'resolve',
+          args: 'foo'
+        }
       }
       this.onmessage = (event: MessageEvent) => {
-        event.data.args = [ returnValues[event.data.method] ]
-        event.data.method = 'resolve'
-        this.postMessage(event.data)
+        const data =
+        Object.assign({}, event.data, returnValues[event.data.method])
+        this.postMessage(data)
       }
     }
     const blob = new Blob([ `(${workerFn}())` ], { type: 'text/javascript' })
