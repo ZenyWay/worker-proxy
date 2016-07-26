@@ -228,12 +228,25 @@ describe('ServiceProxy<S extends Object>', () => {
     res = unwrap(proxy.service, done)
   })
   describe('property service: Promise<S>', () => {
+    it('should resolve to a proxied service object', () => {
+      expect(res.val).toEqual(expected.service)
+    })
     it('should proxy the methods from the list of service method names ' +
     'queried during instantiation by the "newServiceProxy" factory', (done) => {
-      expect(res.val).toEqual(expected.service)
-      res.val.foo()
-      .catch(schedule(done.fail))
+      const results: Promise<any>[] = []
+
+      results.push(res.val.foo()
       .then((res: any) => expect(res).toBe('foo'))
+      .catch((err: Error) => expect(`unexpected "${err}"`).not.toBeDefined()))
+
+      results.push(res.val.err()
+      .then((res: any) => expect(`unexpected value "${res}"`).not.toBeDefined())
+      .catch((err: Error) => {
+        expect(err).toEqual(jasmine.any(Error))
+        expect(err.message).toBe('boom')
+      }))
+
+      Promise.all(results)
       .finally(schedule(done))
     })
   })
