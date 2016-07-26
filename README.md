@@ -71,7 +71,7 @@ before eventually forcing the `Worker` to terminate.
 
 ```ts
 import { hookService } from 'worker-proxy'
-import { newService } from 'my-service'
+import newService from 'my-service'
 
 // create and initialize the service
 const spec = { /* service configuration options */ }
@@ -114,7 +114,7 @@ import { Service } from 'my-service' // only import the interface for casting
 const log = console.log.bind(console)
 
 // proxy and spawn the Worker
-const proxy = newServiceProxy<Service>('./worker.ts')
+const proxy = newServiceProxy<Service>('worker.ts')
 const terminate = proxy.terminate.bind(proxy)
 
 // unwrap the Promise to access the proxied service
