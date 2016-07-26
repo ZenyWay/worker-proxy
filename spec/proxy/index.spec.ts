@@ -24,7 +24,7 @@ interface Service {
 let queue: any
 let workerFn: () => void
 let url: string
-let newWorker: (workerFn: () => void) => any
+let newMockWorker: (workerFn: () => void) => any
 let proxy: ServiceProxy<Service>
 
 beforeEach(() => { // mock queue
@@ -57,9 +57,9 @@ beforeEach(() => { // mock worker script
   const blob = new Blob([ `(${workerFn}())` ], { type: 'text/javascript' })
   url = URL.createObjectURL(blob)
 })
-beforeEach(() => { // mock worker
+beforeEach(() => { // mock worker factory
   let id = 0
-  newWorker = (workerFn: () => void) => {
+  newMockWorker = (workerFn: () => void) => {
     const worker =
     jasmine.createSpyObj(`worker_${++id}`, [ 'postMessage', 'terminate' ])
     const loopback: any = {
@@ -78,49 +78,53 @@ beforeEach(() => { // mock worker
 
 describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?: ' +
 'ServiceProxyOpts): ServiceProxy<S>', () => {
-  let getService: (proxy: ServiceProxy<any>, done: DoneFn) => void
-  let service: any // proxied service object
-  let error: Error
+  let unwrap: (promise: Promise<any>, done: DoneFn) => { res: any, err: Error }
   beforeEach(() => {
-    getService = (proxy: ServiceProxy<any>, done: DoneFn): void => {
-      proxy.service
-      .then(_service => (service = _service))
+    unwrap = (promise: Promise<any>, done: DoneFn) => {
+      const result = <{ res: any, err: Error }>{}
+      promise
+      .then(res => (result.res = res))
       .then(setTimeout.bind(undefined, done))
       .catch((err: Error) => setTimeout(() => {
-        error = err
+        result.err = err
         done()
       }))
+      return result
     }
   })
   describe('when given a {string} path to a worker script', () => {
     let proxy: any
+    let result: any
     beforeEach((done) => {
       proxy = newServiceProxy(url) // spawn a worker thread
-      getService(proxy, done)
+      result = unwrap(proxy.service, done)
     })
     afterEach(() => {
       proxy.kill() // terminate the worker thread
     })
     it('should instantiate and proxy the corresponding worker', () => {
-      expect(service).toEqual({ 'foo': jasmine.any(Function) })
+      expect(result.err).toBe(undefined)
+      expect(result.res).toEqual({ 'foo': jasmine.any(Function) })
     })
   })
   describe('when given a {Worker} instance', () => {
+    let result: any
     beforeEach((done) => {
-      const proxy = newServiceProxy(newWorker(workerFn))
-      getService(proxy, done)
+      const proxy = newServiceProxy(newMockWorker(workerFn))
+      result = unwrap(proxy.service, done)
     })
     it('should instantiate and proxy the corresponding worker', () => {
-      expect(service).toEqual({ 'foo': jasmine.any(Function) })
+      expect(result.err).toBe(undefined)
+      expect(result.res).toEqual({ 'foo': jasmine.any(Function) })
     })
   })
   describe('when given anything else then a {string} path ' +
   'or {Worker} instance', () => {
     let args: any[]
     beforeEach(() => {
-      const broken = newWorker(workerFn)
-      broken.terminate = 'foo'
-      args = [ undefined, 42, () => { return 'foo' }, broken ]
+      const brokenWorker = newMockWorker(workerFn)
+      brokenWorker.terminate = 'foo'
+      args = [ undefined, 42, () => { return 'foo' }, brokenWorker ]
     })
     it('should throw a TypeError', () => {
       args.forEach(arg =>
@@ -128,40 +132,61 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
     })
   })
   describe('when given an {IndexedQueue} instance in "opts.queue"', () => {
+    let result: any
     beforeEach((done) => {
-      const proxy = newServiceProxy(newWorker(workerFn), { queue: queue })
-      getService(proxy, done)
+      const proxy = newServiceProxy(newMockWorker(workerFn), { queue: queue })
+      result = unwrap(proxy.service, done)
     })
     it('should use that queue instead of the internal queue', () => {
+      expect(result.err).toBe(undefined)
+      expect(result.res).toEqual({ 'foo': jasmine.any(Function) })
       expect(queue.push).toHaveBeenCalled()
     })
   })
   describe('when given anything else then an {IndexedQueue} instance ' +
   'in "opts.queue"', () => {
-    let services: any[]
+    let result: any
     beforeEach((done) => {
       queue.length = 42 // not an IndexedQueue anymore
       const args: any[] = [ undefined, 42, () => { return 'foo' }, queue ]
-      const _services = args.map(arg =>
-        ((<Function>newServiceProxy)(newWorker(workerFn), { queue: arg }))
+      const services = args.map(arg =>
+        ((<Function>newServiceProxy)(newMockWorker(workerFn), { queue: arg }))
         .service)
-      Promise.all(_services)
-      .then(_services =>
-        services = _services)
-      .then(() => setTimeout(done))
+      result = unwrap(Promise.all(services), done)
     })
     it('should default to the internal queue', () => {
-      services.forEach(service =>
-        expect(service).toEqual({ 'foo': jasmine.any(Function) }))
+      expect(result.err).toBe(undefined)
+      result.res.forEach((service: any) => {
+        expect(service).toEqual({ 'foo': jasmine.any(Function) })
+      })
     })
   })
   describe('when given a timeout value in "opts.timeout"', () => {
+    let result: any
     beforeEach((done) => {
-      const proxy = newServiceProxy(newWorker(workerFn), { timeout: 0 /* ms */ })
-      getService(proxy, done)
+      const proxy =
+      newServiceProxy(newMockWorker(workerFn), { timeout: 0 /* ms */ })
+      result = unwrap(proxy.service, done)
     })
     it('should timeout as specified', () => {
-      expect(error.name).toBe('TimeoutError')
+      expect(result.err.name).toBe('TimeoutError')
+    })
+  })
+  describe('when given anything else then a {number} "opts.timeout"', () => {
+    let result: any
+    beforeEach((done) => {
+      const args: any[] =
+      [ undefined, 'foo', () => { return 'foo' }, { foo: 'foo'} ]
+      const services = args.map(arg =>
+        ((<Function>newServiceProxy)(newMockWorker(workerFn), { timeout: arg }))
+        .service)
+      result = unwrap(Promise.all(services), done)
+    })
+    it('should default to the internal queue', () => {
+      expect(result.error).toBe(undefined)
+      result.res.forEach((service: any) => {
+        expect(service).toEqual({ 'foo': jasmine.any(Function) })
+      })
     })
   })
 })
