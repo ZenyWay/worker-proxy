@@ -241,7 +241,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
         resolve: resolve,
         reject: reject
       })
-      this.worker.postMessage(data)
+      setTimeout(this.worker.postMessage.bind(this.worker, data))
     })
     .timeout(this.timeout)
     .catch(Promise.TimeoutError, err => {

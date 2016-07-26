@@ -224,12 +224,17 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
       })
     })
   })
-  it('should request the list of service method names from the worker', () => {
+  it('should request the list of service method names from the worker',
+  (done) => {
     const worker = newMockWorker(workerFn)
-    newServiceProxy(worker)
-    expect(worker.postMessage).toHaveBeenCalledWith(jasmine.objectContaining({
-      method: 'getServiceMethods'
-    }))
+    newServiceProxy(worker).service
+    .then(() =>
+      expect(worker.postMessage).toHaveBeenCalledWith({
+        uuid: jasmine.any(Number),
+        method: 'getServiceMethods'
+      }))
+    .catch((err: Error) => expect(`unexpected "${err}"`).not.toBeDefined())
+    .finally(schedule(done))
   })
 })
 
@@ -278,13 +283,16 @@ describe('ServiceProxy<S extends Object>', () => {
   })
   describe('method terminate (): Promise<void>', () => {
     it('should call the "onterminate" handler registered with the worker',
-    () => {
+    (done) => {
       worker.postMessage.calls.reset()
       proxy.terminate()
-      expect(worker.postMessage).toHaveBeenCalledWith({
-        uuid: jasmine.any(Number),
-        method: 'onterminate'
-      })
+      .then(() =>
+        expect(worker.postMessage).toHaveBeenCalledWith({
+          uuid: jasmine.any(Number),
+          method: 'onterminate'
+        }))
+      .catch((err: Error) => expect(`unexpected "${err}"`).not.toBeDefined())
+      .finally(schedule(done))
     })
     it('should resolve when the "onterminate" handler resolves', (done) => {
       proxy.terminate()
