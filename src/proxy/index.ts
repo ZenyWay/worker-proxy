@@ -236,12 +236,11 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   call (spec: ProxyCallSpec): Promise<any> {
     log('ServiceProxy.call', spec)
     const data = <IndexedMethodCallSpec>Object.assign({}, spec)
-    return new Promise((resolve, reject) => {
+    const result = new Promise((resolve, reject) => {
       data.uuid = this.calls.push({
         resolve: resolve,
         reject: reject
       })
-      this.worker.postMessage(data)
     })
     .timeout(this.timeout)
     .catch(Promise.TimeoutError, err => {
@@ -249,6 +248,8 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
       this.calls.has(data.uuid) && this.calls.pop(data.uuid)
       return Promise.reject(err)
     })
+    setTimeout(this.worker.postMessage.bind(this.worker, data)) // delay for Safari
+    return result
   }
   /**
    * @private

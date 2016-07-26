@@ -17,7 +17,11 @@ module.exports = function (config) {
   config.set({
     basePath: '',
     frameworks: [ 'browserify', 'jasmine' ], // include browserify first
-    browsers: [ process.env.TRAVIS ? 'Chrome--no-sandbox' : 'Chrome' /*, 'Firefox' */ ],
+    browsers: [
+      process.env.TRAVIS ? 'Chrome--no-sandbox' : 'Chrome',
+//      'Safari',
+      'Firefox'
+    ],
     customLaunchers: {
       'Chrome--no-sandbox': { // TravisCI
         base: 'Chrome',
@@ -30,6 +34,7 @@ module.exports = function (config) {
       'karma-browserify',
       'karma-chrome-launcher',
       'karma-firefox-launcher',
+      'karma-safari-launcher',
       'karma-jasmine',
       'karma-jasmine-html-reporter',
       'karma-spec-reporter', // output to terminal
