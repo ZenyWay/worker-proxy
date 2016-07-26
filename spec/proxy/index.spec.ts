@@ -27,9 +27,9 @@ interface WorkerMethodCall {
 }
 
 let queue: any
-let workerFn: (onterminate?: WorkerMethodCall) => void
+let workerFn: (self: Worker, onterminate?: WorkerMethodCall) => void
 let url: string
-let newMockWorker: (workerFn: (onterminate?: WorkerMethodCall) => void,
+let newMockWorker: (workerFn: (self: Worker, onterminate?: WorkerMethodCall) => void,
   onterminate?: WorkerMethodCall) => any
 let expected: any
 
@@ -57,7 +57,7 @@ beforeEach(() => { // mock queue
 })
 beforeEach(() => { // mock worker script
   // resolve/reject calls as predefined, ignoring data.target property
-  workerFn = function (onterminate?: WorkerMethodCall): void {
+  workerFn = function (self: Worker, onterminate?: WorkerMethodCall): void {
     const returnValues = {
       getServiceMethods: {
         method: 'resolve',
@@ -79,18 +79,18 @@ beforeEach(() => { // mock worker script
       }
     }
     Object.assign(returnValues.onterminate, onterminate)
-    this.onmessage = (event: MessageEvent) => {
+    self.onmessage = (event: MessageEvent) => {
       const data = returnValues[event.data.method]
       data.uuid = event.data.uuid
-      this.postMessage(data)
+      self.postMessage(data)
     }
   }
-  const blob = new Blob([ `(${workerFn}())` ], { type: 'text/javascript' })
+  const blob = new Blob([ `(${workerFn}(self))` ], { type: 'text/javascript' })
   url = URL.createObjectURL(blob)
 })
 beforeEach(() => { // mock worker factory
   let id = 0
-  newMockWorker = (workerFn: (onterminate?: WorkerMethodCall) => void,
+  newMockWorker = (workerFn: (self: Worker, onterminate?: WorkerMethodCall) => void,
   onterminate?: WorkerMethodCall) => {
     const worker =
     jasmine.createSpyObj(`worker_${++id}`, [ 'postMessage', 'terminate' ])
@@ -99,7 +99,7 @@ beforeEach(() => { // mock worker factory
         setTimeout(worker.onmessage.bind(worker, { data: data }))
       }
     }
-    workerFn.call(loopback, onterminate)
+    workerFn.call(loopback, loopback, onterminate)
     worker.postMessage
     .and.callFake((data: any) =>
       setTimeout(loopback.onmessage.bind(loopback, { data: data}))
