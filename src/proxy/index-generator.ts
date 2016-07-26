@@ -12,7 +12,7 @@
  * Limitations under the License.
  */
 ;
-import { isObject, isFunction, isString, isNumber } from './utils'
+import { isObject, isFunction, isString, isNumber } from '../utils'
 import debug = require('debug')
 const log = debug('index-generator')
 

@@ -1,0 +1,21 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "outDir": "../dist",
+    "target": "es5",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": [
+      "es2015",
+      "webworker"
+    ],
+    "declaration": true,
+    "sourceMap": false,
+    "noEmitHelpers": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "removeComments": true,
+    "noImplicitAny": true,
+    "suppressImplicitAnyIndexErrors": true
+  }
+}

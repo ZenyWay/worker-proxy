@@ -13,8 +13,8 @@
  */
 ;
 import newIndexedQueue,
-{ IndexedQueue, isIndexedQueue } from '../../src/lib/indexed-queue'
-import { IndexGenerator } from '../../src/lib/index-generator'
+{ IndexedQueue, isIndexedQueue } from '../../src/proxy/indexed-queue'
+import { IndexGenerator } from '../../src/proxy/index-generator'
 
 let mockIndex: any
 let queue: IndexedQueue

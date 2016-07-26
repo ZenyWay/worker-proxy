@@ -13,7 +13,7 @@
  */
 ;
 import newIndexGenerator,
-{ isIndexGenerator, IndexGenerator } from '../../src/lib/index-generator'
+{ isIndexGenerator, IndexGenerator } from '../../src/proxy/index-generator'
 
 let index: IndexGenerator
 beforeEach(() => {

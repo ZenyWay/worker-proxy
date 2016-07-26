@@ -15,7 +15,7 @@ to properly shut down the service in the `Worker` thread
 through a `onterminate` handler in the `Worker` thread
 before definitively terminating the `Worker`.
 
-# <a name="api"></a> API v1.0.0 experimental
+# <a name="api"></a> API v1.0.0 stable
 `ES5` and [`Typescript`](http://www.typescriptlang.org/) compatible.
 Coded in `Typescript 2`.
 
@@ -71,7 +71,7 @@ before eventually forcing the `Worker` to terminate.
 
 ```ts
 import { hookService } from 'worker-proxy'
-import { newService } from 'my-service'
+import newService from 'my-service'
 
 // create and initialize the service
 const spec = { /* service configuration options */ }
@@ -114,7 +114,7 @@ import { Service } from 'my-service' // only import the interface for casting
 const log = console.log.bind(console)
 
 // proxy and spawn the Worker
-const proxy = newServiceProxy<Service>('./worker.ts')
+const proxy = newServiceProxy<Service>('worker.ts')
 const terminate = proxy.terminate.bind(proxy)
 
 // unwrap the Promise to access the proxied service
@@ -125,8 +125,14 @@ proxy.service
 .catch(err => log(err) || proxy.kill()) // log shutdown error and force Worker termination
 ```
 
+note that using the `Service` interface as type for the proxied service object
+is not strictly correct, since all methods of the latter are asynchronous,
+i.e. return a `Promise`, while some methods of the `Service` instance
+running in the worker are synchronous. However, in the context of the above
+example, the approximation is not relevant.
+
 # <a name="contributing"></a> CONTRIBUTING
-see the [contribution guidelines](./CONTRIBUTING)
+see the [contribution guidelines](./CONTRIBUTING.md)
 
 # <a name="license"></a> LICENSE
 Copyright 2016 Stéphane M. Catala

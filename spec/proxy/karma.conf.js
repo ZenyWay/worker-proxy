@@ -12,17 +12,20 @@
  * Limitations under the License.
  */
 ;
-import { newServiceProxy } from '../src/'
+var assign = require('tslib').__assign
 
-interface Service {
-
+module.exports = function (config) {
+  'use strict'
+  require('../support/karma.conf.js')(config) // setup base config
+  config.set({ // overwrites arrays
+    files: [
+      '*.spec.ts'
+    ],
+    browserify: assign({}, config.browserify, {
+      plugin: (config.browserify.plugin || []).concat([
+        [ 'tsify', { 'project': 'spec/proxy' } ]
+//        [ 'proxyquire-universal' ]
+      ])
+    })
+  })
 }
-
-beforeEach(() => {
-  newServiceProxy<Service>('./TODO')
-})
-
-describe('factory newServiceProxy<S extends Object>(path: string, opts?: ' +
-'ServiceProxyOpts): ServiceProxy<S>', () => {
-  // TODO
-})

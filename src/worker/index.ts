@@ -16,8 +16,8 @@ import Promise = require('bluebird')
 import {
   WorkerServiceEvent,
   IndexedMethodCallSpec
-} from './'
-import { assert, isObject, isFunction, isArrayLike, isString } from './lib/utils'
+} from '../proxy'
+import { assert, isObject, isFunction, isArrayLike, isString } from '../utils'
 import debug = require('debug')
 const log = debug('worker-proxy')
 /**
