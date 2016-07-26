@@ -248,7 +248,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
       this.calls.has(data.uuid) && this.calls.pop(data.uuid)
       return Promise.reject(err)
     })
-    setTimeout(this.worker.postMessage(this.worker, data)) // delay for Safari
+    setTimeout(this.worker.postMessage.bind(this.worker, data)) // delay for Safari
     return result
   }
   /**
