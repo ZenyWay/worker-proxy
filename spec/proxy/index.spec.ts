@@ -16,15 +16,21 @@ import newServiceProxy, { ServiceProxy } from '../../src/proxy'
 import Promise = require('bluebird')
 import { schedule, unwrap } from '../support/jasmine-bluebird'
 
-interface Result<T> {
+interface PromiseResult<T> {
   val?: T
   err?: Error
 }
 
+interface WorkerMethodCall {
+  method: string,
+  args: any[]
+}
+
 let queue: any
-let workerFn: () => void // decorate `this`
+let workerFn: (onterminate?: WorkerMethodCall) => void
 let url: string
-let newMockWorker: (workerFn: () => void) => any
+let newMockWorker: (workerFn: (onterminate?: WorkerMethodCall) => void,
+  onterminate?: WorkerMethodCall) => any
 let expected: any
 
 beforeEach(() => { // predefined expectations
@@ -36,7 +42,8 @@ beforeEach(() => { // predefined expectations
     },
     service: { // expected proxied service object
       'foo': jasmine.any(Function),
-      'err': jasmine.any(Function)
+      'err': jasmine.any(Function),
+      'misbehaved': jasmine.any(Function)
     }
   }
 })
@@ -50,11 +57,11 @@ beforeEach(() => { // mock queue
 })
 beforeEach(() => { // mock worker script
   // resolve/reject calls as predefined, ignoring data.target property
-  workerFn = function () {
+  workerFn = function (onterminate?: WorkerMethodCall): void {
     const returnValues = {
       getServiceMethods: {
         method: 'resolve',
-        args: [ [ 'foo', 'err' ] ]
+        args: [ [ 'foo', 'err', 'misbehaved' ] ]
       },
       foo: {
         method: 'resolve',
@@ -63,8 +70,15 @@ beforeEach(() => { // mock worker script
       err: {
         method: 'reject',
         args: [ new Error('boom') ]
+      },
+      misbehaved: {
+        method: 'unknown'
+      },
+      onterminate: {
+        method: 'resolve'
       }
     }
+    Object.assign(returnValues.onterminate, onterminate)
     this.onmessage = (event: MessageEvent) => {
       const data = returnValues[event.data.method]
       data.uuid = event.data.uuid
@@ -76,7 +90,8 @@ beforeEach(() => { // mock worker script
 })
 beforeEach(() => { // mock worker factory
   let id = 0
-  newMockWorker = (workerFn: () => void) => {
+  newMockWorker = (workerFn: (onterminate?: WorkerMethodCall) => void,
+  onterminate?: WorkerMethodCall) => {
     const worker =
     jasmine.createSpyObj(`worker_${++id}`, [ 'postMessage', 'terminate' ])
     const loopback: any = {
@@ -84,7 +99,7 @@ beforeEach(() => { // mock worker factory
         setTimeout(worker.onmessage.bind(worker, { data: data }))
       }
     }
-    workerFn.call(loopback)
+    workerFn.call(loopback, onterminate)
     worker.postMessage
     .and.callFake((data: any) =>
       setTimeout(loopback.onmessage.bind(loopback, { data: data}))
@@ -97,7 +112,7 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
 'ServiceProxyOpts): ServiceProxy<S>', () => {
   describe('when given a {string} path to a worker script', () => {
     let proxy: any
-    let res: Result<any>
+    let res: PromiseResult<any>
     beforeEach((done) => {
       proxy = newServiceProxy(url) // spawn a worker thread
       res = unwrap(proxy.service, done)
@@ -115,7 +130,7 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
   })
   describe('when given a {Worker} instance', () => {
     let proxy: any
-    let res: Result<any>
+    let res: PromiseResult<any>
     beforeEach((done) => {
       proxy = newServiceProxy(newMockWorker(workerFn))
       res = unwrap(proxy.service, done)
@@ -143,7 +158,7 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
   })
   describe('when given an {IndexedQueue} instance in "opts.queue"', () => {
     let proxy: any
-    let res: Result<any>
+    let res: PromiseResult<any>
     beforeEach((done) => {
       proxy = newServiceProxy(newMockWorker(workerFn), { queue: queue })
       res = unwrap(proxy.service, done)
@@ -160,7 +175,7 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
   describe('when given anything else then an {IndexedQueue} instance ' +
   'in "opts.queue"', () => {
     let proxies: any[]
-    let res: Result<any>
+    let res: PromiseResult<any>
     beforeEach((done) => {
       const brokenQueue = Object.assign({}, queue, { length: 42 })
       const values = [ undefined, 42, () => { return 'foo' }, brokenQueue ]
@@ -179,7 +194,7 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
     })
   })
   describe('when given a timeout value in "opts.timeout"', () => {
-    let res: Result<any>
+    let res: PromiseResult<any>
     beforeEach((done) => {
       const proxy =
       newServiceProxy(newMockWorker(workerFn), { timeout: 0 /* ms */ })
@@ -191,7 +206,7 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
   })
   describe('when given anything else then a {number} "opts.timeout"', () => {
     let proxies: any[]
-    let res: Result<any>
+    let res: PromiseResult<any>
     beforeEach((done) => {
       const values: any[] =
       [ undefined, '42', () => { return 42 }, [ 42 ], { '42': 42 } ]
@@ -249,11 +264,82 @@ describe('ServiceProxy<S extends Object>', () => {
       Promise.all(results)
       .finally(schedule(done))
     })
+    it('should silently ignore incorrect messages from the worker', (done) => {
+      debugger
+      newServiceProxy(worker, { timeout: 100 /* ms */}).service
+      .then((service: any) => service.misbehaved())
+      .then((res: any) => expect(`unexpected value "${res}"`).not.toBeDefined())
+      .catch((err: Error) => {
+        expect(err).toEqual(jasmine.any(Error))
+        expect(err.name).toBe('TimeoutError')
+      })
+      .finally(schedule(done))
+    })
   })
   describe('method terminate (): Promise<void>', () => {
-
+    it('should call the "onterminate" handler registered with the worker',
+    () => {
+      worker.postMessage.calls.reset()
+      proxy.terminate()
+      expect(worker.postMessage).toHaveBeenCalledWith({
+        uuid: jasmine.any(Number),
+        method: 'onterminate'
+      })
+    })
+    it('should resolve when the "onterminate" handler resolves', (done) => {
+      proxy.terminate()
+      .then((res: any) => expect(res).not.toBeDefined())
+      .catch((err: Error) => expect(`unexpected "${err}"`).not.toBeDefined())
+      .finally(schedule(done))
+    })
+    it('should reject with the error from the "onterminate" handler',
+    (done) => {
+      const worker = newMockWorker(workerFn, { // onterminate handler reply
+        method: 'reject',
+        args: [ new Error('fail') ]
+      })
+      newServiceProxy(worker).terminate()
+      .then((res: any) => expect(`unexpected value "${res}"`).not.toBeDefined())
+      .catch((err: Error) => {
+        expect(err).toEqual(jasmine.any(Error))
+        expect(err.message).toBe('fail')
+      })
+      .finally(schedule(done))
+    })
+    it('should terminate the worker when the "onterminate" handler resolves',
+    (done) => {
+      worker.terminate.calls.reset()
+      proxy.terminate()
+      .then((res: any) => expect(worker.terminate).toHaveBeenCalled())
+      .catch((err: Error) => expect(`unexpected "${err}"`).not.toBeDefined())
+      .finally(schedule(done))
+    })
+    it('should not terminate the worker when the "onterminate" handler rejects',
+    (done) => {
+      const worker = newMockWorker(workerFn, { // onterminate handler reply
+        method: 'reject',
+        args: [ new Error('fail') ]
+      })
+      worker.terminate.calls.reset()
+      newServiceProxy(worker).terminate()
+      .then((res: any) => expect(`unexpected value "${res}"`).not.toBeDefined())
+      .catch((err: Error) => expect(worker.terminate).not.toHaveBeenCalled())
+      .finally(schedule(done))
+    })
   })
   describe('method kill (): void', () => {
-
+    it('should force the worker to terminate', () => {
+      worker.terminate.calls.reset()
+      proxy.kill()
+      expect(worker.terminate).toHaveBeenCalled()
+    })
+    it('should not call the "onterminate" handler registered with the worker',
+    () => {
+      worker.postMessage.calls.reset()
+      worker.terminate.calls.reset()
+      proxy.kill()
+      expect(worker.postMessage).not.toHaveBeenCalled()
+      expect(worker.terminate).toHaveBeenCalled()
+    })
   })
 })

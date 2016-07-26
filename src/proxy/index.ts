@@ -271,14 +271,6 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   }
   /**
    * @private
-   * @method unknown
-   * @error {Error} `unknown method`
-   */
-  unknown (): Promise<void> {
-    return Promise.reject(new Error('unknown method'))
-  }
-  /**
-   * @private
    * @prop {Worker} worker
    */
   worker: Worker
