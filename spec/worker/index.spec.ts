@@ -24,7 +24,7 @@ let onterminate: () => (void | Promise<void>)
 
 beforeEach(() => {
   worker = jasmine.createSpyObj('worker', [ 'postMessage' ])
-  // place the service methodson the prototype of the service instance
+  // place the service methods on the prototype of the service instance
   service = Object.create(jasmine.createSpyObj('service',
   [ 'asyncwork', 'syncwork', 'stop' ]))
   ;(<jasmine.Spy>service.syncwork).and.returnValue('foo')
