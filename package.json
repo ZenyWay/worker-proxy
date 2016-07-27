@@ -1,6 +1,6 @@
 {
   "name": "worker-proxy",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "thread-local proxy for a given service spawned in dedicated Worker thread",
   "main": "dist",
   "browser": "dist/bundle.js",
