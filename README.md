@@ -1,9 +1,10 @@
-# worker-proxy
-[![Join the chat at https://gitter.im/ZenyWay/worker-proxy](https://badges.gitter.im/ZenyWay/worker-proxy.svg)](https://gitter.im/ZenyWay/worker-proxy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# worker-proxy [![Join the chat at https://gitter.im/ZenyWay/worker-proxy](https://badges.gitter.im/ZenyWay/worker-proxy.svg)](https://gitter.im/ZenyWay/worker-proxy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![NPM](https://nodei.co/npm/worker-proxy.png?compact=true)](https://nodei.co/npm/worker-proxy/)
 [![build status](https://travis-ci.org/ZenyWay/worker-proxy.svg?branch=master)](https://travis-ci.org/ZenyWay/worker-proxy)
 [![coverage status](https://coveralls.io/repos/github/ZenyWay/worker-proxy/badge.svg?branch=master)](https://coveralls.io/github/ZenyWay/worker-proxy)
+[![Dependency Status](https://gemnasium.com/badges/github.com/ZenyWay/worker-proxy.svg)](https://gemnasium.com/github.com/ZenyWay/worker-proxy)
 
-thread-local proxy for a given service spawned in dedicated Worker thread.
+spawn a service in a Web Worker and proxy it from the current thread
 
 the proxy's `service` property resolves to a service object
 with the same interface as that of the original service
@@ -12,7 +13,7 @@ only methods of the service object and its prototype chain
 are proxied (not all properties).
 
 the proxy exposes a `terminate` method that allows
-to properly shut down the service in the `Worker` thread
+to properly shut down the service
 through a `onterminate` handler in the `Worker` thread
 before definitively terminating the `Worker`.
 
@@ -30,8 +31,8 @@ npm run example
 ```
 
 ### module: `my-service`
-example of a sample third-party service module
-that we want to spawn in a dedicated Worker thread and proxy in the main thread.
+sample third-party service module that we want to spawn in a dedicated Worker
+and proxy in the main thread.
 the service module is not part of the `worker-proxy` module.
 
 ```ts
