@@ -21,10 +21,14 @@
     "test:worker": "karma start spec/worker/karma.conf.js --single-run",
     "test:debug:proxy": "karma start spec/proxy/karma.conf.js --no-single-run",
     "test:debug:worker": "karma start spec/worker/karma.conf.js --no-single-run",
-    "test:coverage": "npm run test:coverage:proxy && npm run test:coverage:worker && npm run test:coverage:serve",
+    "test:coverage": "rimraf spec/reports/coverage && npm run test:coverage:proxy && npm run test:coverage:worker && npm run test:coverage:serve",
     "test:coverage:serve": "http-server -c-1 -o -p 6510 spec/reports/coverage",
     "test:coverage:proxy": "rimraf spec/reports/coverage/proxy && karma start spec/proxy/karma-coverage.conf.js --single-run && remap-istanbul -i spec/reports/coverage/proxy/chrom*/coverage.json -o spec/reports/coverage/proxy -t html",
-    "test:coverage:worker": "rimraf spec/reports/coverage/worker && karma start spec/worker/karma-coverage.conf.js --single-run && remap-istanbul -i spec/reports/coverage/worker/chrom*/coverage.json -o spec/reports/coverage/worker -t html"
+    "test:coverage:worker": "rimraf spec/reports/coverage/worker && karma start spec/worker/karma-coverage.conf.js --single-run && remap-istanbul -i spec/reports/coverage/worker/chrom*/coverage.json -o spec/reports/coverage/worker -t html",
+    "test:ci": "rimraf spec/reports/coverage && npm run test:ci:proxy && npm run test:ci:worker",
+    "test:ci:coveralls": "cat spec/reports/coverage/proxy/lcov.info spec/reports/coverage/worker/lcov.info | sed -e 's/SF:\\.\\.\\/\\.\\.\\//SF:/' | coveralls",
+    "test:ci:proxy": "karma start spec/proxy/karma-coverage.conf.js --single-run && remap-istanbul -i spec/reports/coverage/proxy/chrom*/coverage.json -o spec/reports/coverage/proxy/lcov.info -t lcovonly",
+    "test:ci:worker": "karma start spec/worker/karma-coverage.conf.js --single-run && remap-istanbul -i spec/reports/coverage/worker/chrom*/coverage.json -o spec/reports/coverage/worker/lcov.info -t lcovonly"
   },
   "repository": {
     "type": "git",
@@ -56,6 +60,7 @@
     "browserify": "^13.1.0",
     "browserify-istanbul": "^2.0.0",
     "concurrently": "^2.1.0",
+    "coveralls": "^2.11.11",
     "cpx": "^1.3.2",
     "eslint": "^2.13.1",
     "http-server": "^0.9.0",

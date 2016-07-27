@@ -28,22 +28,24 @@ module.exports = function (config) {
             'instrumenterConfig': { 'embedSource': true }
           }
         ]
-      ]),
+      ])
     }),
-    reporters: (config.reporters || []).concat([ // 'progress' | 'dots' | 'kjhtml' | 'junit' | 'spec' | ' coverage'
-      'coverage'
-    ]),
+    reporters: [
+      'spec', 'coverage'
+    ],
     coverageReporter: {
       dir: 'spec/reports/coverage',
       reporters: [
         {
           type: 'json',
-          subdir: function (browser) {
-            return browser.toLowerCase().split(/[ /-]/)[0];
-          },
+          subdir: browsername,
           file: 'coverage.json'
         }
       ]
     }
   })
+}
+
+function browsername (browser) {
+  return browser.toLowerCase().split(/[ /-]/)[0]
 }
