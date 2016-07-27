@@ -1,7 +1,7 @@
 # worker-proxy
 [![Join the chat at https://gitter.im/ZenyWay/worker-proxy](https://badges.gitter.im/ZenyWay/worker-proxy.svg)](https://gitter.im/ZenyWay/worker-proxy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![build status](https://travis-ci.org/ZenyWay/worker-proxy.svg?branch=master)](https://travis-ci.org/ZenyWay/worker-proxy)
-[![coverage status](https://coveralls.io/repos/github/ZenyWay/worker-proxy/badge.svg?branch=coveralls)](https://coveralls.io/github/ZenyWay/worker-proxy?branch=coveralls)
+[![coverage status](https://coveralls.io/repos/github/ZenyWay/worker-proxy/badge.svg?branch=master)](https://coveralls.io/github/ZenyWay/worker-proxy)
 
 thread-local proxy for a given service spawned in dedicated Worker thread.
 
