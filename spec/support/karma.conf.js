@@ -12,16 +12,21 @@
  * Limitations under the License.
  */
 ;
+var browsers = [
+  process.env.TRAVIS ? 'Chrome--no-sandbox' : 'Chrome',
+  'Firefox'
+]
+
+if (process.env.TRAVIS_OS_NAME === 'osx') {
+  browsers.push('Safari')
+}
+
 module.exports = function (config) {
   'use strict'
   config.set({
     basePath: '',
     frameworks: [ 'browserify', 'jasmine' ], // include browserify first
-    browsers: [
-      process.env.TRAVIS ? 'Chrome--no-sandbox' : 'Chrome',
-//      'Safari',
-      'Firefox'
-    ],
+    browsers: browsers,
     customLaunchers: {
       'Chrome--no-sandbox': { // TravisCI
         base: 'Chrome',
