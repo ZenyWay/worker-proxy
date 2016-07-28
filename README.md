@@ -22,13 +22,14 @@ before definitively terminating the `Worker`.
 Coded in `Typescript 2`.
 
 ## example
-the output from this [example](./spec/example) can be viewed
-in the browser console, by running the following commands
-from a terminal:
+a live version of this example can be viewed [here](https://cdn.rawgit.com/ZenyWay/worker-proxy/master/spec/example/index.html)
+in the browser console,
+or by cloning this repository and running the following commands from a terminal:
 ```bash
 npm install
 npm run example
 ```
+the files of this example are available [here](./spec/example).
 
 ### module: `my-service`
 sample third-party service module that we want to spawn in a dedicated Worker
