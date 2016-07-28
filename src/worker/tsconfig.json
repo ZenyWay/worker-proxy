@@ -1,7 +1,6 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
-    "outDir": "../dist",
     "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
@@ -17,5 +16,8 @@
     "removeComments": true,
     "noImplicitAny": true,
     "suppressImplicitAnyIndexErrors": true
-  }
+  },
+  "exclude": [
+    "proxy"
+  ]
 }

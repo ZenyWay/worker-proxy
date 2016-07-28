@@ -12,21 +12,28 @@
  * Limitations under the License.
  */
 ;
+/**
+ * @public
+ * @interface
+ */
+export interface WorkerServiceEvent extends MessageEvent {
+  data: IndexedMethodCallSpec
+}
+/**
+ * @public
+ * @interface
+ * data content of {WorkerServiceEvent}
+ */
+export interface ProxyCallSpec extends MethodCallSpec {
+  timeout?: number
+}
 
-import newServiceProxy from '../../../dist/proxy'
-import { Service } from './sample-service'
-import debug = require('debug')
-const log = debug('example')
-debug.enable('*')
+export interface IndexedMethodCallSpec extends MethodCallSpec {
+  uuid: number
+}
 
-// proxy and spawn the Worker
-const proxy = newServiceProxy<Service>('worker.js')
-const terminate = proxy.terminate.bind(proxy)
-
-log(proxy)
-// unwrap the Promise to access the proxied service
-proxy.service
-.call('toUpperCase', 'Rob says wow!')
-.tap(log) // "ROB SAYS WOW!"
-.then(terminate) // shut down service and terminate Worker
-.catch(err => log(err) || proxy.kill()) // log shutdown error and force Worker termination
+export interface MethodCallSpec {
+  target?: 'service'
+  method: string
+  args?: any[]
+}

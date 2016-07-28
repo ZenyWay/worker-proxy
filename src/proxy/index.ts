@@ -12,16 +12,15 @@
  * Limitations under the License.
  */
 ;
+import newIndexedQueue, { IndexedQueue, isIndexedQueue } from './indexed-queue'
+
+import { isObject, isArrayLike, isFunction, isString, isNumber }
+from '../common/utils'
+
+import Promise = require('bluebird')
+
 import debug = require('debug')
 const log = debug('worker-proxy')
-// import assert = require('assert')
-import Promise = require('bluebird')
-import newIndexedQueue,
-{ IndexedQueue, isIndexedQueue } from './indexed-queue'
-//import hookService from '../worker/worker'
-import { isObject, isArrayLike, isFunction, isString, isNumber } from '../utils'
-
-//export { hookService }
 
 /**
  * @public
