@@ -12,12 +12,16 @@
  * Limitations under the License.
  */
 ;
-import Promise = require('bluebird')
 import {
   WorkerServiceEvent,
   IndexedMethodCallSpec
-} from '../proxy'
-import { assert, isObject, isFunction, isArrayLike, isString } from '../utils'
+} from '../common/interfaces'
+
+import { assert, isObject, isFunction, isArrayLike, isString }
+from '../common/utils'
+
+import Promise = require('bluebird')
+
 import debug = require('debug')
 const log = debug('worker-proxy')
 /**

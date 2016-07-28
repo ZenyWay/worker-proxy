@@ -14,7 +14,9 @@
 ;
 import newIndexGenerator,
 { IndexGenerator, isIndexGenerator } from './index-generator'
-import { assert, isObject, isFunction } from '../utils'
+
+import { assert, isObject, isFunction } from '../common/utils'
+
 import debug = require('debug')
 const log = debug('indexed-queue')
 

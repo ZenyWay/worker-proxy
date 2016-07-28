@@ -12,11 +12,7 @@
  * Limitations under the License.
  */
 ;
-import hookService,
-{ ServiceBinder, ServiceBinderSpec } from './worker'
-import newServiceProxy,
-{ ServiceProxyFactory, ServiceProxyOpts, ServiceProxy } from './proxy'
-export {
-  newServiceProxy, ServiceProxyFactory, ServiceProxyOpts, ServiceProxy,
-  hookService, ServiceBinder, ServiceBinderSpec
+module.exports = {
+  newServiceProxy: require('./proxy'),
+  hookService: require('./worker')
 }
