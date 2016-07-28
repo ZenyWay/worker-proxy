@@ -13,7 +13,7 @@
  */
 ;
 
-import newServiceProxy from '../../../dist/proxy'
+import newServiceProxy from '../../dist/proxy'
 import { Service } from './sample-service'
 import debug = require('debug')
 const log = debug('example')

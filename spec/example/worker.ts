@@ -12,7 +12,7 @@
  * Limitations under the License.
  */
 ;
-import hookService from '../../../dist/worker'
+import hookService from '../../dist/worker'
 import newService from './sample-service'
 import debug = require('debug')
 const log = debug('example')
