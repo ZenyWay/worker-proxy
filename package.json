@@ -15,7 +15,7 @@
     "build:proxy": "mkdirp build/proxy && rimraf build/proxy/* && tsc -p src/proxy -outDir build/proxy",
     "build:worker": "mkdirp build/worker && rimraf build/worker/* && tsc -p src/worker -outDir build/worker",
     "bundle": "browserify dist/index.js > dist/bundle.js",
-    "example": "npm run example:bundle && npm run example:serve",
+    "example": "npm run dist && npm run example:bundle && npm run example:serve",
     "example:serve": "http-server -c-1 -i -e html -o -p 6510 spec/example/dist",
     "preexample:bundle": "mkdirp spec/example/dist && rimraf spec/example/dist/* && cpx spec/example/src/index.html spec/example/dist",
     "example:bundle": "concurrently \"npm run example:bundle:index\" \"npm run example:bundle:worker\"",
