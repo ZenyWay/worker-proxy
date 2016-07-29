@@ -22,11 +22,11 @@ before definitively terminating the `Worker`.
 Coded in `Typescript 2`.
 
 ## specs
-run the [unit tests](https://rawgit.com/ZenyWay/worker-proxy/v1.2.6/spec/web/index.html)
+run the [unit tests](https://cdn.rawgit.com/ZenyWay/worker-proxy/v1.2.6/spec/web/index.html)
 in your browser.
 
 ## example
-a live version of this example can be viewed [here](https://rawgit.com/ZenyWay/worker-proxy/v1.2.6/spec/example/index.html)
+a live version of this example can be viewed [here](https://cdn.rawgit.com/ZenyWay/worker-proxy/v1.2.6/spec/example/index.html)
 in the browser console,
 or by cloning this repository and running the following commands from a terminal:
 ```bash
