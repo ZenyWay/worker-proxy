@@ -19,6 +19,8 @@ from '../common/utils'
 
 import Promise = require('bluebird')
 
+import { __assign as assign } from 'tslib'
+
 import debug = require('debug')
 const log = debug('worker-proxy')
 
@@ -234,7 +236,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    */
   call (spec: ProxyCallSpec): Promise<any> {
     log('ServiceProxy.call', spec)
-    const data = <IndexedMethodCallSpec>Object.assign({}, spec)
+    const data = <IndexedMethodCallSpec>assign({}, spec)
     const result = new Promise((resolve, reject) => {
       data.uuid = this.calls.push({
         resolve: resolve,
