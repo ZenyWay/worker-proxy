@@ -34,7 +34,11 @@
     "test:ci": "rimraf spec/reports/coverage && npm run test:ci:proxy && npm run test:ci:worker",
     "test:ci:coveralls": "cat spec/reports/coverage/proxy/lcov.info spec/reports/coverage/worker/lcov.info | sed -e 's/SF:\\.\\.\\/\\.\\.\\//SF:/' | coveralls",
     "test:ci:proxy": "karma start spec/proxy/karma-coverage.conf.js --single-run && remap-istanbul -i spec/reports/coverage/proxy/chrom*/coverage.json -o spec/reports/coverage/proxy/lcov.info -t lcovonly",
-    "test:ci:worker": "karma start spec/worker/karma-coverage.conf.js --single-run && remap-istanbul -i spec/reports/coverage/worker/chrom*/coverage.json -o spec/reports/coverage/worker/lcov.info -t lcovonly"
+    "test:ci:worker": "karma start spec/worker/karma-coverage.conf.js --single-run && remap-istanbul -i spec/reports/coverage/worker/chrom*/coverage.json -o spec/reports/coverage/worker/lcov.info -t lcovonly",
+    "test:web": "concurrently \"npm run test:web:proxy\" \"npm run test:web:worker\" && npm run test:web:serve",
+    "test:web:serve": "http-server -c-1 -o -p 6510 spec/web",
+    "test:web:proxy": "browserify spec/proxy/*.spec.ts -p [ tsify --project spec/proxy ] -t uglifyify --exclude bluebird --exclude debug -o spec/web/proxy.spec.js",
+    "test:web:worker": "browserify spec/worker/*.spec.ts -p [ tsify --project spec/worker ] -t uglifyify --exclude bluebird --exclude debug -o spec/web/worker.spec.js"
   },
   "repository": {
     "type": "git",
@@ -86,6 +90,7 @@
     "rimraf": "^2.5.4",
     "tsify": "^1.0.1",
     "typescript": "^2.0.0",
+    "uglifyify": "^3.0.2",
     "watchify": "^3.7.0"
   }
 }
