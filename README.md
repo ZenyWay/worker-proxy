@@ -77,7 +77,7 @@ allowing the latter to handle failure of service shut-down
 before eventually forcing the `Worker` to terminate.
 
 ```ts
-import hookService from 'worker-proxy/worker'
+import hookService from 'worker-proxy/dist/worker'
 import newService from 'my-service'
 
 // create and initialize the service
@@ -116,7 +116,7 @@ to shut down the service and terminate the Worker,
 the proxy's `terminate` method can be called as in this example.
 
 ```ts
-import newServiceProxy from 'worker-proxy/proxy'
+import newServiceProxy from 'worker-proxy/dist/proxy'
 import { Service } from 'my-service' // only import the interface for casting
 const log = console.log.bind(console)
 
