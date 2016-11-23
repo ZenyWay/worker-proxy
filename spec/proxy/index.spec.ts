@@ -27,6 +27,7 @@ interface WorkerMethodCall {
   args: any[]
 }
 
+let workify: Function
 let queue: any
 let workerFn: (self: Worker, onterminate?: WorkerMethodCall) => void
 let url: string
@@ -107,6 +108,8 @@ beforeEach(() => { // mock worker factory
     )
     return worker
   }
+  workify = jasmine.createSpy('workify')
+  .and.returnValue(newMockWorker(workerFn))
 })
 
 describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?: ' +
@@ -129,6 +132,25 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
       expect(res.val).toEqual(expected.service)
     })
   })
+  describe('when given a worker {Function}', () => {
+    let proxy: any
+    let res: PromiseResult<any>
+    beforeEach((done) => {
+      proxy = newServiceProxy(workerFn, { workify: workify })
+      res = unwrap(proxy.service, done)
+    })
+    it('should return an instance of ServiceProxy', () => {
+      expect(proxy).toEqual(expected.proxy)
+    })
+    it('should instantiate a corresponding {Worker} instance with `webworkify`',
+    () => {
+      expect(workify).toHaveBeenCalledWith(workerFn)
+    })
+    it('should proxy the resulting worker', () => {
+      expect(res.err).not.toBeDefined()
+      expect(res.val).toEqual(expected.service)
+    })
+  })
   describe('when given a {Worker} instance', () => {
     let proxy: any
     let res: PromiseResult<any>
@@ -144,13 +166,13 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
       expect(res.val).toEqual(expected.service)
     })
   })
-  describe('when given anything else then a {string} path ' +
-  'or {Worker} instance', () => {
+  describe('when given anything else then a {string} path, ' +
+  'a worker {Function}, or {Worker} instance', () => {
     let args: any[]
     beforeEach(() => {
       const brokenWorker = newMockWorker(workerFn)
       brokenWorker.terminate = 'foo'
-      args = [ undefined, 42, () => { return 'foo' }, brokenWorker ]
+      args = [ undefined, true, 42, brokenWorker ]
     })
     it('should throw a TypeError', () => {
       args.forEach(arg =>

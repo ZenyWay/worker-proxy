@@ -1,6 +1,22 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 "use strict";
 ;
+var proxy_1 = require("../../src/proxy");
+var debug = require("debug");
+var log = debug('example');
+debug.enable('*');
+var proxy = proxy_1.default('worker.js');
+var terminate = proxy.terminate.bind(proxy);
+log(proxy);
+proxy.service
+    .call('toUpperCase', 'Rob says wow!')
+    .tap(log)
+    .then(terminate)
+    .catch(function (err) { return log(err) || proxy.kill(); });
+
+},{"../../src/proxy":4,"debug":undefined}],2:[function(require,module,exports){
+"use strict";
+;
 function isObject(val) {
     return !!val && (typeof val === 'object');
 }
@@ -21,14 +37,14 @@ function isNumber(val) {
     return typeof val === 'number';
 }
 exports.isNumber = isNumber;
-function assert(val, errType, message) {
+function assert(val, errorConstructor, message) {
     if (val)
         return;
-    throw new errType(message);
+    throw new errorConstructor(message);
 }
 exports.assert = assert;
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 "use strict";
 ;
 var utils_1 = require("../common/utils");
@@ -58,7 +74,7 @@ var newIndexGenerator = IndexGeneratorClass.newInstance;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = newIndexGenerator;
 
-},{"../common/utils":1,"debug":undefined}],3:[function(require,module,exports){
+},{"../common/utils":2,"debug":undefined}],4:[function(require,module,exports){
 "use strict";
 ;
 var indexed_queue_1 = require("./indexed-queue");
@@ -80,7 +96,7 @@ var ServiceProxyClass = (function () {
         var specs = {};
         specs.timeout =
             opts && utils_1.isNumber(opts.timeout) ? opts.timeout : ServiceProxyClass.timeout;
-        specs.worker = isWorker(worker) ? worker : newWorker(worker);
+        specs.worker = toWorker(worker, opts && opts.workify);
         specs.queue =
             opts && indexed_queue_1.isIndexedQueue(opts.queue) ? opts.queue : indexed_queue_1.default();
         var proxy = new ServiceProxyClass(specs);
@@ -143,8 +159,14 @@ var ServiceProxyClass = (function () {
     return ServiceProxyClass;
 }());
 ServiceProxyClass.timeout = 3 * 60 * 1000;
-function newWorker(val) {
+function toWorker(val, workify) {
+    if (isWorker(val)) {
+        return val;
+    }
     try {
+        if (utils_1.isFunction(val) && utils_1.isFunction(workify)) {
+            return workify(val);
+        }
         if (utils_1.isString(val)) {
             return new Worker(val);
         }
@@ -160,7 +182,7 @@ var newServiceProxy = ServiceProxyClass.newInstance;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = newServiceProxy;
 
-},{"../common/utils":1,"./indexed-queue":4,"bluebird":undefined,"debug":undefined,"tslib":undefined}],4:[function(require,module,exports){
+},{"../common/utils":2,"./indexed-queue":5,"bluebird":undefined,"debug":undefined,"tslib":undefined}],5:[function(require,module,exports){
 "use strict";
 ;
 var index_generator_1 = require("./index-generator");
@@ -212,20 +234,4 @@ var newIndexedQueue = IndexedQueueClass.getInstance;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = newIndexedQueue;
 
-},{"../common/utils":1,"./index-generator":2,"debug":undefined}],5:[function(require,module,exports){
-"use strict";
-;
-var proxy_1 = require("../../dist/proxy");
-var debug = require("debug");
-var log = debug('example');
-debug.enable('*');
-var proxy = proxy_1.default('worker.js');
-var terminate = proxy.terminate.bind(proxy);
-log(proxy);
-proxy.service
-    .call('toUpperCase', 'Rob says wow!')
-    .tap(log)
-    .then(terminate)
-    .catch(function (err) { return log(err) || proxy.kill(); });
-
-},{"../../dist/proxy":3,"debug":undefined}]},{},[5]);
+},{"../common/utils":2,"./index-generator":3,"debug":undefined}]},{},[1]);

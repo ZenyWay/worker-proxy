@@ -102,6 +102,12 @@ service
 }))
 ```
 
+> NOTE: the above approach requires prior bundling of dependencies
+> into the worker code, e.g. with [`browserify`](http://browserify.org/).
+> [see below](#webworkify) for a
+> [`webworkify`](https://www.npmjs.com/package/webworkify)-like
+> example, allowing the worker-script to `live-require` its dependencies.
+
 ### file: index.ts
 this script runs in the main thread.
 it spawns the `worker.ts` script in a dedicated Worker thread
@@ -137,6 +143,78 @@ is not strictly correct, since all methods of the latter are asynchronous,
 i.e. return a `Promise`, while some methods of the `Service` instance
 running in the worker are synchronous. However, in the context of the above
 example, the approximation is not relevant.
+
+## <a name="webworkify"></a> `require` in worker script
+the above approach requires prior bundling of dependencies
+into the worker code, e.g. with [`browserify`](http://browserify.org/).
+this typically results in unnecessarily bloating the code
+because dependencies are bundled both in the main script and the proxy script.
+
+`worker-proxy` builds on [`webworkify`](https://www.npmjs.com/package/webworkify)
+to optionally spawn a `Worker` that can `require` its dependencies.
+dependencies only need to be bundled once.
+
+to enable this, the main script should `require` the worker script,
+which should export its code as a function taking a single argument,
+`self`, without any return value.
+
+the main and worker scripts from the above example are modified accordingly
+for illustration:
+
+### file: `worker.ts` (`WorkerGlobalScope`)
+to enable 'live' `require` calls from the worker thread,
+simply wrap its code into a function that takes a single argument (self),
+and export that function:
+
+```ts
+import hookService from 'worker-proxy/dist/worker'
+import newService from 'my-service'
+
+export = function (self) {
+  // create and initialize the service
+  const spec = { /* service configuration options */ }
+  const service = newService(spec) // Promise<Service>
+
+  // define an `onterminate` handler to properly shut down the service
+  // before this Worker is terminated.
+  // the return value will be sent back to the main thread.
+  function onterminate () {
+    return service
+    .then(service => service.stop()) // resolve or reject back to main thread
+  }
+
+  // hook up the service so it can be proxied from the main thread
+  // and wait until the proxy's terminate method is called in the main thread
+  service
+  .then(service => hookService({
+    worker: self,
+    service: service,
+    onterminate: onterminate
+  }))
+}
+```
+
+### file: index.ts
+to enable 'live' `require` calls from the worker thread,
+simply `require` the worker script in the main script:
+
+```ts
+import worker = './worker'
+import newServiceProxy from 'worker-proxy/dist/proxy'
+import { Service } from 'my-service' // only import the interface for casting
+const log = console.log.bind(console)
+
+// proxy and spawn the Worker
+const proxy = newServiceProxy<Service>(worker)
+const terminate = proxy.terminate.bind(proxy)
+
+// unwrap the Promise to access the proxied service
+proxy.service
+.call('toUpperCase', 'Rob says wow!') // or .then(service => service.toUpperCase('Rob says wow!'))
+.tap(log) // "ROB SAYS WOW!"
+.then(terminate) // shut down service and terminate Worker
+.catch(err => log(err) || proxy.kill()) // log shutdown error and force Worker termination
+```
 
 # <a name="contributing"></a> CONTRIBUTING
 see the [contribution guidelines](./CONTRIBUTING.md)
