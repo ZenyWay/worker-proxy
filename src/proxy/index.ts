@@ -33,7 +33,7 @@ const log = debug('worker-proxy')
  * @return {Promise<ServiceProxy<S>>}
  */
 export interface ServiceProxyFactory {
-  <S extends Object>(worker: string|Worker, opts?: ServiceProxyOpts): ServiceProxy<S>
+  <S extends Object>(worker: string|Function|Worker, opts?: ServiceProxyOpts): ServiceProxy<S>
 }
 /**
  * @public
@@ -50,6 +50,12 @@ export interface ServiceProxyOpts {
    * @prop {IndexedQueue} queue
    */
   queue?: IndexedQueue
+  /**
+   *
+   * @public
+   * @prop {Function} workify?
+   */
+  workify?: Function
 }
 /**
  * @public
@@ -145,12 +151,12 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    * @generic {S extends Object} service interface
 	 * @return {Promise<ServiceProxy<S>>}
 	 */
-	static newInstance <S extends Object>(worker: string,
+	static newInstance <S extends Object>(worker: string|Function|Worker,
   opts?: ServiceProxyOpts): ServiceProxy<S> {
     const specs = <ServiceProxySpecs>{}
     specs.timeout =
     opts && isNumber(opts.timeout) ? opts.timeout : ServiceProxyClass.timeout
-    specs.worker = isWorker(worker) ? worker : newWorker(worker)
+    specs.worker = toWorker(worker, opts && opts.workify)
     specs.queue =
     opts && isIndexedQueue(opts.queue) ? opts.queue : newIndexedQueue()
 
@@ -290,12 +296,24 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
 }
 /**
  * @param {any} val?
+ *
+ * @param {any} workify?
+ * only required when `val` is a worker {Function}.
+ *
  * @return {Worker} from `val` if a valid {string} path to a worker script
- * @error {TypeError} 'invalid argument' when `val` is not a valid URL {string},
- * or, in _some_ user agents, if the URL violates the same-origin policy.
+ *
+ * @error {TypeError} 'invalid argument'
+ * * when `val` is not a valid URL {string},
+ * * or, in _some_ user agents, when the URL violates the same-origin policy,
+ * * or when `val` is not a valid worker {Function} or {Worker} instance,
+ * * or when `val` is a valid worker {Function} and `workify` is not a {Function}.
  */
-function newWorker (val?: any): Worker {
+function toWorker (val?: any, workify?: any): Worker {
+  if (isWorker(val)) { return val }
   try {
+    if (isFunction(val)) {
+      return (isFunction(workify) ? workify : require('webworkify'))(val)
+    }
     if (isString(val)) { return new Worker(val) }
   } catch (err) { /* DOMException in some user agents */ }
   throw new TypeError('invalid argument')
