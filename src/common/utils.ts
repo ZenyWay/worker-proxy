@@ -59,12 +59,12 @@ export function isNumber (val: any): val is number {
  * @public
  * @function assert
  * @param {boolean} val
- * @param {typeof Error} errType
+ * @param {new(msg:string)=>E} errorConstructor
  * @param {string} message
  * @throw {Error} of type `errType` with the given `message` when val is false
  */
-export function assert (val: boolean, errType: typeof Error, message: string):
-void {
+export function assert <E extends Error>(val: boolean,
+errorConstructor: new (msg:string) => E, message: string): void {
   if (val) return
-  throw new errType(message)
+  throw new errorConstructor(message)
 }
