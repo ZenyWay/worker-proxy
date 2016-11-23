@@ -1,4 +1,87 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var bundleFn = arguments[3];
+var sources = arguments[4];
+var cache = arguments[5];
+
+var stringify = JSON.stringify;
+
+module.exports = function (fn, options) {
+    var wkey;
+    var cacheKeys = Object.keys(cache);
+
+    for (var i = 0, l = cacheKeys.length; i < l; i++) {
+        var key = cacheKeys[i];
+        var exp = cache[key].exports;
+        // Using babel as a transpiler to use esmodule, the export will always
+        // be an object with the default export as a property of it. To ensure
+        // the existing api and babel esmodule exports are both supported we
+        // check for both
+        if (exp === fn || exp && exp.default === fn) {
+            wkey = key;
+            break;
+        }
+    }
+
+    if (!wkey) {
+        wkey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
+        var wcache = {};
+        for (var i = 0, l = cacheKeys.length; i < l; i++) {
+            var key = cacheKeys[i];
+            wcache[key] = key;
+        }
+        sources[wkey] = [
+            Function(['require','module','exports'], '(' + fn + ')(self)'),
+            wcache
+        ];
+    }
+    var skey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
+
+    var scache = {}; scache[wkey] = wkey;
+    sources[skey] = [
+        Function(['require'], (
+            // try to call default if defined to also support babel esmodule
+            // exports
+            'var f = require(' + stringify(wkey) + ');' +
+            '(f.default ? f.default : f)(self);'
+        )),
+        scache
+    ];
+
+    var workerSources = {};
+    resolveSources(skey);
+
+    function resolveSources(key) {
+        workerSources[key] = true;
+
+        for (var depPath in sources[key][1]) {
+            var depKey = sources[key][1][depPath];
+            if (!workerSources[depKey]) {
+                resolveSources(depKey);
+            }
+        }
+    }
+
+    var src = '(' + bundleFn + ')({'
+        + Object.keys(workerSources).map(function (key) {
+            return stringify(key) + ':['
+                + sources[key][0]
+                + ',' + stringify(sources[key][1]) + ']'
+            ;
+        }).join(',')
+        + '},{},[' + stringify(skey) + '])'
+    ;
+
+    var URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+
+    var blob = new Blob([src], { type: 'text/javascript' });
+    if (options && options.bare) { return blob; }
+    var workerUrl = URL.createObjectURL(blob);
+    var worker = new Worker(workerUrl);
+    worker.objectURL = workerUrl;
+    return worker;
+};
+
+},{}],2:[function(require,module,exports){
 "use strict";
 ;
 var proxy_1 = require("../../src/proxy");
@@ -14,7 +97,7 @@ proxy.service
     .then(terminate)
     .catch(function (err) { return log(err) || proxy.kill(); });
 
-},{"../../src/proxy":4,"debug":undefined}],2:[function(require,module,exports){
+},{"../../src/proxy":5,"debug":undefined}],3:[function(require,module,exports){
 "use strict";
 ;
 function isObject(val) {
@@ -44,7 +127,7 @@ function assert(val, errorConstructor, message) {
 }
 exports.assert = assert;
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 "use strict";
 ;
 var utils_1 = require("../common/utils");
@@ -74,7 +157,7 @@ var newIndexGenerator = IndexGeneratorClass.newInstance;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = newIndexGenerator;
 
-},{"../common/utils":2,"debug":undefined}],4:[function(require,module,exports){
+},{"../common/utils":3,"debug":undefined}],5:[function(require,module,exports){
 "use strict";
 ;
 var indexed_queue_1 = require("./indexed-queue");
@@ -164,8 +247,8 @@ function toWorker(val, workify) {
         return val;
     }
     try {
-        if (utils_1.isFunction(val) && utils_1.isFunction(workify)) {
-            return workify(val);
+        if (utils_1.isFunction(val)) {
+            return (utils_1.isFunction(workify) ? workify : require('webworkify'))(val);
         }
         if (utils_1.isString(val)) {
             return new Worker(val);
@@ -182,7 +265,7 @@ var newServiceProxy = ServiceProxyClass.newInstance;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = newServiceProxy;
 
-},{"../common/utils":2,"./indexed-queue":5,"bluebird":undefined,"debug":undefined,"tslib":undefined}],5:[function(require,module,exports){
+},{"../common/utils":3,"./indexed-queue":6,"bluebird":undefined,"debug":undefined,"tslib":undefined,"webworkify":1}],6:[function(require,module,exports){
 "use strict";
 ;
 var index_generator_1 = require("./index-generator");
@@ -234,4 +317,4 @@ var newIndexedQueue = IndexedQueueClass.getInstance;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = newIndexedQueue;
 
-},{"../common/utils":2,"./index-generator":3,"debug":undefined}]},{},[1]);
+},{"../common/utils":3,"./index-generator":4,"debug":undefined}]},{},[2]);

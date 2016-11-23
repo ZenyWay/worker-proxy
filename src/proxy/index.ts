@@ -311,7 +311,9 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
 function toWorker (val?: any, workify?: any): Worker {
   if (isWorker(val)) { return val }
   try {
-    if (isFunction(val) && isFunction(workify)) { return workify(val) }
+    if (isFunction(val)) {
+      return (isFunction(workify) ? workify : require('webworkify'))(val)
+    }
     if (isString(val)) { return new Worker(val) }
   } catch (err) { /* DOMException in some user agents */ }
   throw new TypeError('invalid argument')
