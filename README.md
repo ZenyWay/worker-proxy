@@ -199,7 +199,7 @@ to enable 'live' `require` calls from the worker thread,
 simply `require` the worker script in the main script:
 
 ```ts
-import worker = './worker'
+import worker = require('./worker')
 import newServiceProxy from 'worker-proxy/dist/proxy'
 import { Service } from 'my-service' // only import the interface for casting
 const log = console.log.bind(console)
