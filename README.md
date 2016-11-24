@@ -17,16 +17,16 @@ to properly shut down the service
 through a `onterminate` handler in the `Worker` thread
 before definitively terminating the `Worker`.
 
-# <a name="api"></a> API v1.0.0 stable
+# <a name="api"></a> API v1.1 stable
 `ES5` and [`Typescript`](http://www.typescriptlang.org/) compatible.
 Coded in `Typescript 2`.
 
 ## specs
-run the [unit tests](https://cdn.rawgit.com/ZenyWay/worker-proxy/v1.2.6/spec/web/index.html)
+run the [unit tests](https://cdn.rawgit.com/ZenyWay/worker-proxy/v1.3.0/spec/web/index.html)
 in your browser.
 
 ## example
-a live version of this example can be viewed [here](https://cdn.rawgit.com/ZenyWay/worker-proxy/v1.2.6/spec/example/index.html)
+a live version of this example can be viewed [here](https://cdn.rawgit.com/ZenyWay/worker-proxy/v1.3.0/spec/example/index.html)
 in the browser console,
 or by cloning this repository and running the following commands from a terminal:
 ```bash
@@ -51,6 +51,7 @@ the service module is not part of the `worker-proxy` module.
  */
 export interface Service {
   toUpperCase (text: string): string // say this converts text to upper case
+  anotherMethod (arg: any): any // any other service method
   stop (): Promise<void> // say this must be called to shut down the service
 }
 
@@ -107,6 +108,18 @@ service
 > [see below](#webworkify) for a
 > [`webworkify`](https://www.npmjs.com/package/webworkify)-like
 > example, allowing the worker-script to `live-require` its dependencies.
+
+since npm version `1.3.0` (API 1.1) it is additionally possible to restrict
+the proxied service methods to a subset of the original service methods:
+```ts
+service
+.then(service => hookService({
+  worker: self,
+  service: service,
+  methods: [ 'toUpperCase', 'stop' ], // only expose service#toUpperCase and service#stop
+  onterminate: onterminate
+}))
+```
 
 ### file: index.ts
 this script runs in the main thread.

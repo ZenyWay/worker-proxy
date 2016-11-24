@@ -22,6 +22,8 @@ from '../common/utils'
 
 import Promise = require('bluebird')
 
+import { __assign as assign } from 'tslib'
+
 import debug = require('debug')
 const log = debug('worker-proxy')
 /**
@@ -63,6 +65,13 @@ export interface ServiceBinderSpec<S extends Object> {
    * before eventually forcing the `Worker` to terminate.
    */
   onterminate?: () => (void | Promise<void>)
+  /**
+   * @public
+   * @prop {string[]=} methods
+   * expose only the service methods in this list,
+   * or all service methods if `undefined`.
+   */
+  methods?: string[]
 }
 
 /**
@@ -77,21 +86,26 @@ class WorkerServiceClass<S extends Object> {
 	static hookService: ServiceBinder =
   function <S extends Object>(spec: ServiceBinderSpec<S>) {
     assert(isValidServiceBinderSpec(spec), TypeError, 'invalid argument')
-  	const workerService = new WorkerServiceClass(spec)
+    const config: ServiceBinderSpec<S> = assign({}, spec)
+    config.methods = getPropertyNames(spec.service)
+    .filter(val =>
+      isFunction(spec.service[val]))
+    .filter(val =>
+      !spec.methods || (spec.methods.indexOf(val) >= 0))
+  	const workerService = new WorkerServiceClass(config)
   }
 	/**
    * @private
    * @constructor
 	 * @param {ServiceBinderSpec<S>} { worker, service, onterminate }
 	 */
-	constructor ({ worker, service, onterminate }: ServiceBinderSpec<S>) {
+	constructor ({ worker, service, onterminate, methods }: ServiceBinderSpec<S>) {
     this.worker = worker
     worker.onmessage = this.onmessage.bind(this) // hook
 		log('worker.onmessage', 'hooked')
     this.onterminate = onterminate
     this.service = service
-    this.methods = getPropertyNames(service)
-    .filter(val => isFunction(service[val]))
+    this.methods = methods
     log('WorkerService.methods', this.methods)
   }
 	/**
@@ -115,22 +129,12 @@ class WorkerServiceClass<S extends Object> {
    */
   callTargetMethod (spec: IndexedMethodCallSpec): Promise<any> {
     assert(Number.isSafeInteger(spec.uuid), TypeError, "invalid argument")
-    return this.getTargetMethod(spec).apply(this, spec.args || [])
-  }
-  /**
-   * @private
-   * @method getTargetMethod
-   * @param {MethodCallSpec} spec
-   * @return {Function} target method as specified in `spec`
-   * @error {Error} "invalid argument" when `spec` is invalid
-   */
-  getTargetMethod (spec: IndexedMethodCallSpec): Function {
     assert(isValidWorkerServiceMethodCall(spec), TypeError, "invalid argument")
     const target = isObject(this[spec.target]) ? this[spec.target] : this
-    const method =
-    isFunction(target[spec.method]) ? target[spec.method] : this.unknown
-    log('WorkerService.getTargetMethod', method)
-    return method
+    const isValidMethod = target !== this.service
+    ? isFunction(target[spec.method]) : this.methods.indexOf(spec.method) >= 0
+    const method = isValidMethod ? target[spec.method] : this.unknown
+    return method.apply(target, spec.args || [])
   }
   /**
    * @private
@@ -227,6 +231,16 @@ function getPropertyNames (obj: Object): string[] {
 function isValidServiceBinderSpec (val: any): val is ServiceBinderSpec<any> {
   return isObject(val) && isWorkerGlobalScope(val.worker) &&
   isObject(val.service) && (!val.onterminate || isFunction(val.onterminate))
+  && isValidMethodsOption(val.methods)
+}
+/**
+ * @private
+ * @function isValidMethodsOption
+ * @param {*} val
+ * @return {val is string[]}
+ */
+function isValidMethodsOption (val: any): val is string[] {
+  return !val || Array.isArray(val) && val.every(prop => isString(prop))
 }
 /**
  * @param {any} val

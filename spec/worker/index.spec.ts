@@ -41,7 +41,7 @@ beforeEach(() => {
 })
 
 describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, ' +
-'service: S, onterminate: () => Promise<void> }): void', () => {
+'service: S, onterminate?: () => Promise<void>, methods?: string[] }): void', () => {
   it('should add an "onmessage" handler to the given worker', () => {
     expect(worker.onmessage).toEqual(jasmine.any(Function))
   })
@@ -99,6 +99,50 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
         onterminate: 42
       }))
       .toThrowError(TypeError, 'invalid argument')
+    })
+  })
+
+  describe('when "methods" is defined but not a an array of strings', () => {
+    it('should throw an "invalid argument" TypeError', () => {
+      expect(() => hookService(<any>{
+        worker: worker,
+        service: service
+      }))
+      .not.toThrow()
+      expect(() => hookService(<any>{
+        worker: worker,
+        service: service,
+        methods: [ "foo", 42 ]
+      }))
+      .toThrowError(TypeError, 'invalid argument')
+    })
+  })
+
+  describe('when "methods" is an array of strings', () => {
+    beforeEach(() => {
+      const data = [ {
+        uuid: 42,
+        target: 'service',
+        method: 'syncwork',
+        args: [ 'foo', 'bar' ]
+      }, {
+        uuid: 42,
+        target: 'service',
+        method: 'asyncwork',
+        args: [ 'foo', 'bar' ]
+      } ]
+      hookService(<any>{
+        worker: worker,
+        service: service,
+        methods: [ "syncwork" ]
+      })
+      data.forEach((data: any) => worker.onmessage(<MessageEvent>{ data: data }))
+    })
+
+    it('should expose only the service methods listed in the "methods" array', () => {
+      expect(service.syncwork).toHaveBeenCalledTimes(1)
+      expect(service.asyncwork).not.toHaveBeenCalled()
+      expect(service.stop).not.toHaveBeenCalled()
     })
   })
 
