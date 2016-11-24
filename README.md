@@ -22,11 +22,11 @@ before definitively terminating the `Worker`.
 Coded in `Typescript 2`.
 
 ## specs
-run the [unit tests](https://cdn.rawgit.com/ZenyWay/worker-proxy/v1.3.0/spec/web/index.html)
+run the [unit tests](https://cdn.rawgit.com/ZenyWay/worker-proxy/v2.1.0/spec/web/index.html)
 in your browser.
 
 ## example
-a live version of this example can be viewed [here](https://cdn.rawgit.com/ZenyWay/worker-proxy/v1.3.0/spec/example/index.html)
+a live version of this example can be viewed [here](https://cdn.rawgit.com/ZenyWay/worker-proxy/v2.1.0/spec/example/index.html)
 in the browser console,
 or by cloning this repository and running the following commands from a terminal:
 ```bash
@@ -109,7 +109,7 @@ service
 > [`webworkify`](https://www.npmjs.com/package/webworkify)-like
 > example, allowing the worker-script to `live-require` its dependencies.
 
-since npm version `1.3.0` (API 1.1) it is additionally possible to restrict
+since npm version `2.1.0` (API 1.1) it is additionally possible to restrict
 the proxied service methods to a subset of the original service methods:
 ```ts
 service
@@ -212,7 +212,7 @@ to enable 'live' `require` calls from the worker thread,
 simply `require` the worker script in the main script:
 
 ```ts
-import worker = './worker'
+import worker = require('./worker')
 import newServiceProxy from 'worker-proxy/dist/proxy'
 import { Service } from 'my-service' // only import the interface for casting
 const log = console.log.bind(console)
