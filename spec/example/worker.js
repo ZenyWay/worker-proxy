@@ -6316,6 +6316,141 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],6:[function(require,module,exports){
+(function (global){
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+/* global global, define, System, Reflect, Promise */
+var __extends;
+var __assign;
+var __rest;
+var __decorate;
+var __param;
+var __metadata;
+var __awaiter;
+var __generator;
+(function (factory) {
+    var root = typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : {};
+    if (typeof System === "object" && typeof System.register === "function") {
+        System.register("tslib", [], function (exporter) {
+            factory(createExporter(root, exporter));
+            return { setters: [], execute: function() { } };
+        });
+    }
+    else if (typeof define === "function" && define.amd) {
+        define("tslib", ["exports"], function (exports) { factory(createExporter(root, createExporter(exports))); });
+    }
+    else if (typeof module === "object" && typeof module.exports === "object") {
+        factory(createExporter(root, createExporter(module.exports)));
+    }
+    else {
+        factory(createExporter(root));
+    }
+
+    function createExporter(exports, previous) {
+        return function (id, v) { return exports[id] = previous ? previous(id, v) : v; };
+    }
+})
+(function (exporter) {
+    __extends = function (d, b) {
+        for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+
+    __assign = Object.assign || function (t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    };
+
+    __rest = function (s, e) {
+        var t = {};
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+            t[p] = s[p];
+        if (typeof Object.getOwnPropertySymbols === "function")
+            for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
+                t[p[i]] = s[p[i]];
+        return t;
+    };
+
+    __decorate = function (decorators, target, key, desc) {
+        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+        if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+        else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+        return c > 3 && r && Object.defineProperty(target, key, r), r;
+    };
+
+    __param = function (paramIndex, decorator) {
+        return function (target, key) { decorator(target, key, paramIndex); }
+    };
+
+    __metadata = function (metadataKey, metadataValue) {
+        if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+    };
+
+    __awaiter = function (thisArg, _arguments, P, generator) {
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+            function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+            function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+            step((generator = generator.apply(thisArg, _arguments)).next());
+        });
+    };
+
+    __generator = function (thisArg, body) {
+        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
+        return { next: verb(0), "throw": verb(1), "return": verb(2) };
+        function verb(n) { return function (v) { return step([n, v]); }; }
+        function step(op) {
+            if (f) throw new TypeError("Generator is already executing.");
+            while (_) try {
+                if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+                if (y = 0, t) op = [0, t.value];
+                switch (op[0]) {
+                    case 0: case 1: t = op; break;
+                    case 4: _.label++; return { value: op[1], done: false };
+                    case 5: _.label++; y = op[1]; op = [0]; continue;
+                    case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                    default:
+                        if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                        if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                        if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                        if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                        if (t[2]) _.ops.pop();
+                        _.trys.pop(); continue;
+                }
+                op = body.call(thisArg, _);
+            } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+            if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+        }
+    };
+
+    exporter("__extends", __extends);
+    exporter("__assign", __assign);
+    exporter("__rest", __rest);
+    exporter("__decorate", __decorate);
+    exporter("__param", __param);
+    exporter("__metadata", __metadata);
+    exporter("__awaiter", __awaiter);
+    exporter("__generator", __generator);
+});
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],7:[function(require,module,exports){
 "use strict";
 ;
 var Promise = require("bluebird");
@@ -6337,7 +6472,7 @@ var newService = ServiceClass.newInstance;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = newService;
 
-},{"bluebird":1}],7:[function(require,module,exports){
+},{"bluebird":1}],8:[function(require,module,exports){
 "use strict";
 ;
 var worker_1 = require("../../src/worker");
@@ -6359,7 +6494,7 @@ service
     onterminate: onterminate
 }); });
 
-},{"../../src/worker":9,"./sample-service":6,"debug":2}],8:[function(require,module,exports){
+},{"../../src/worker":10,"./sample-service":7,"debug":2}],9:[function(require,module,exports){
 "use strict";
 ;
 function isObject(val) {
@@ -6389,23 +6524,23 @@ function assert(val, errorConstructor, message) {
 }
 exports.assert = assert;
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 ;
 var utils_1 = require("../common/utils");
 var Promise = require("bluebird");
+var tslib_1 = require("tslib");
 var debug = require("debug");
 var log = debug('worker-proxy');
 var WorkerServiceClass = (function () {
     function WorkerServiceClass(_a) {
-        var worker = _a.worker, service = _a.service, onterminate = _a.onterminate;
+        var worker = _a.worker, service = _a.service, onterminate = _a.onterminate, methods = _a.methods;
         this.worker = worker;
         worker.onmessage = this.onmessage.bind(this);
         log('worker.onmessage', 'hooked');
         this.onterminate = onterminate;
         this.service = service;
-        this.methods = getPropertyNames(service)
-            .filter(function (val) { return utils_1.isFunction(service[val]); });
+        this.methods = methods;
         log('WorkerService.methods', this.methods);
     }
     WorkerServiceClass.prototype.onmessage = function (event) {
@@ -6416,14 +6551,12 @@ var WorkerServiceClass = (function () {
     };
     WorkerServiceClass.prototype.callTargetMethod = function (spec) {
         utils_1.assert(Number.isSafeInteger(spec.uuid), TypeError, "invalid argument");
-        return this.getTargetMethod(spec).apply(this, spec.args || []);
-    };
-    WorkerServiceClass.prototype.getTargetMethod = function (spec) {
         utils_1.assert(isValidWorkerServiceMethodCall(spec), TypeError, "invalid argument");
         var target = utils_1.isObject(this[spec.target]) ? this[spec.target] : this;
-        var method = utils_1.isFunction(target[spec.method]) ? target[spec.method] : this.unknown;
-        log('WorkerService.getTargetMethod', method);
-        return method;
+        var isValidMethod = target !== this.service
+            ? utils_1.isFunction(target[spec.method]) : this.methods.indexOf(spec.method) >= 0;
+        var method = isValidMethod ? target[spec.method] : this.unknown;
+        return method.apply(target, spec.args || []);
     };
     WorkerServiceClass.prototype.getServiceMethods = function () {
         log('WorkerService.getServiceProxy', this.methods);
@@ -6452,7 +6585,15 @@ var WorkerServiceClass = (function () {
 }());
 WorkerServiceClass.hookService = function (spec) {
     utils_1.assert(isValidServiceBinderSpec(spec), TypeError, 'invalid argument');
-    var workerService = new WorkerServiceClass(spec);
+    var config = tslib_1.__assign({}, spec);
+    config.methods = getPropertyNames(spec.service)
+        .filter(function (val) {
+        return utils_1.isFunction(spec.service[val]);
+    })
+        .filter(function (val) {
+        return !spec.methods || (spec.methods.indexOf(val) >= 0);
+    });
+    var workerService = new WorkerServiceClass(config);
 };
 function getPropertyNames(obj) {
     var keys = Object.getOwnPropertyNames(obj)
@@ -6464,7 +6605,11 @@ function getPropertyNames(obj) {
 }
 function isValidServiceBinderSpec(val) {
     return utils_1.isObject(val) && isWorkerGlobalScope(val.worker) &&
-        utils_1.isObject(val.service) && (!val.onterminate || utils_1.isFunction(val.onterminate));
+        utils_1.isObject(val.service) && (!val.onterminate || utils_1.isFunction(val.onterminate))
+        && isValidMethodsOption(val.methods);
+}
+function isValidMethodsOption(val) {
+    return !val || Array.isArray(val) && val.every(function (prop) { return utils_1.isString(prop); });
 }
 function isWorkerGlobalScope(val) {
     return utils_1.isObject(val) && utils_1.isFunction(val.postMessage);
@@ -6480,4 +6625,4 @@ var hookService = WorkerServiceClass.hookService;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = hookService;
 
-},{"../common/utils":8,"bluebird":1,"debug":2}]},{},[7]);
+},{"../common/utils":9,"bluebird":1,"debug":2,"tslib":6}]},{},[8]);
