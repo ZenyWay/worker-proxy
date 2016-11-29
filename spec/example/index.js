@@ -71,6 +71,7 @@ var ServiceProxyClass = (function () {
     function ServiceProxyClass(spec) {
         this.worker = spec.worker;
         this.hasObjectUrl = utils_1.isString(getObjectUrl(this.worker));
+        this.revokeObjectURL = spec.revokeObjectURL;
         this.worker.onmessage = this.onmessage.bind(this);
         this.calls = spec.queue;
         this.timeout = spec.timeout;
@@ -84,6 +85,8 @@ var ServiceProxyClass = (function () {
         specs.worker = toWorker(worker, opts && opts.workify);
         specs.queue =
             opts && indexed_queue_1.isIndexedQueue(opts.queue) ? opts.queue : indexed_queue_1.default();
+        specs.revokeObjectURL =
+            opts && opts.revokeObjectURL || URL.revokeObjectURL.bind(URL);
         var proxy = new ServiceProxyClass(specs);
         log('ServiceProxyClass.newInstance', proxy);
         return ({
@@ -145,11 +148,8 @@ var ServiceProxyClass = (function () {
         return service;
     };
     ServiceProxyClass.prototype.revokeObjectUrl = function () {
-        if (!this.hasObjectUrl) {
-            return;
-        }
         this.hasObjectUrl = false;
-        URL.revokeObjectURL(getObjectUrl(this.worker));
+        this.revokeObjectURL(getObjectUrl(this.worker));
     };
     return ServiceProxyClass;
 }());

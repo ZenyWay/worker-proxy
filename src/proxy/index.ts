@@ -56,6 +56,12 @@ export interface ServiceProxyOpts {
    * @prop {Function} workify?
    */
   workify?: Function
+  /**
+   * @public
+   * @prop {Function} revokeObjectURL?
+   * override URL#revokeObjectURL in unit tests
+   */
+  revokeObjectURL?: Function
 }
 /**
  * @public
@@ -127,6 +133,12 @@ interface ServiceProxySpecs {
    * @prop {IndexedQueue} queue
    */
   queue: IndexedQueue
+  /**
+   *
+   * @public
+   * @prop {Function} revokeObjectURL?
+   */
+  revokeObjectURL?: Function
 }
 
 /**
@@ -159,6 +171,8 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
     specs.worker = toWorker(worker, opts && opts.workify)
     specs.queue =
     opts && isIndexedQueue(opts.queue) ? opts.queue : newIndexedQueue()
+    specs.revokeObjectURL =
+    opts && opts.revokeObjectURL || URL.revokeObjectURL.bind(URL)
 
   	const proxy = new ServiceProxyClass(specs)
     log('ServiceProxyClass.newInstance', proxy)
@@ -207,6 +221,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
 	constructor (spec: ServiceProxySpecs) {
   	this.worker = spec.worker
     this.hasObjectUrl = isString(getObjectUrl(this.worker))
+    this.revokeObjectURL = spec.revokeObjectURL
     this.worker.onmessage = this.onmessage.bind(this)
     // TODO setup this.worker.onerror ?
     this.calls = spec.queue
@@ -291,9 +306,8 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    * @param {Worker} worker
    */
   revokeObjectUrl (): void {
-    if (!this.hasObjectUrl) { return }
     this.hasObjectUrl = false
-    URL.revokeObjectURL(getObjectUrl(this.worker))
+    this.revokeObjectURL(getObjectUrl(this.worker))
   }
   /**
    * @private
@@ -317,6 +331,12 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    * @see ServiceProxyClass#revokeObjectUrl
    */
   hasObjectUrl: boolean
+  /**
+   * @private
+   * @prop {Function} revokeObjectURL
+   * @see ServiceProxyClass#revokeObjectUrl
+   */
+  revokeObjectURL: Function
 }
 /**
  * @private
