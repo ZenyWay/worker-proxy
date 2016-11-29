@@ -13,6 +13,7 @@
  */
 ;
 import hookService from '../../src/worker'
+import Promise = require('bluebird')
 
 let worker: WorkerGlobalScope
 let service: {
