@@ -13,14 +13,14 @@
  */
 ;
 
-import newServiceProxy from '../../src/proxy'
+import newServiceProxy from '../../dist/proxy'
 import { Service } from './sample-service'
 import debug = require('debug')
 const log = debug('example')
 debug.enable('*')
 
 // proxy and spawn the Worker
-const proxy = newServiceProxy<Service>('worker.js')
+const proxy = newServiceProxy<Service>('./worker.js')
 const terminate = proxy.terminate.bind(proxy)
 
 log(proxy)

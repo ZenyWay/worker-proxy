@@ -108,8 +108,6 @@ beforeEach(() => { // mock worker factory
     )
     return worker
   }
-  workify = jasmine.createSpy('workify')
-  .and.returnValue(newMockWorker(workerFn))
 })
 
 describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?: ' +
@@ -133,10 +131,23 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
     })
   })
   describe('when given a worker {Function}', () => {
+    let revokeObjectURL: any
     let proxy: any
     let res: PromiseResult<any>
+    beforeEach(() => {
+      const workifiedWorker = newMockWorker(workerFn)
+      workifiedWorker.objectURL = 'objectURL'
+
+      workify = jasmine.createSpy('workify')
+      .and.returnValue(workifiedWorker)
+
+      revokeObjectURL = jasmine.createSpy('revokeObjectURL')
+    })
     beforeEach((done) => {
-      proxy = newServiceProxy(workerFn, { workify: workify })
+      proxy = newServiceProxy(workerFn, {
+        workify: workify,
+        revokeObjectURL: revokeObjectURL
+      })
       res = unwrap(proxy.service, done)
     })
     it('should return an instance of ServiceProxy', () => {
@@ -149,6 +160,17 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
     it('should proxy the resulting worker', () => {
       expect(res.err).not.toBeDefined()
       expect(res.val).toEqual(expected.service)
+    })
+    describe('the instantiated {ServiceProxy}', () => {
+      beforeEach((done) => {
+        res.val.foo()
+        .finally(done)
+      })
+      it('should revoke the object URL created from the worker {Function} ' +
+      'upon reception of the first message from the worker', () => {
+        expect(revokeObjectURL).toHaveBeenCalledTimes(1)
+        expect(revokeObjectURL).toHaveBeenCalledWith('objectURL')
+      })
     })
   })
   describe('when given a {Worker} instance', () => {

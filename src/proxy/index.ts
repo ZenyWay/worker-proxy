@@ -56,6 +56,12 @@ export interface ServiceProxyOpts {
    * @prop {Function} workify?
    */
   workify?: Function
+  /**
+   * @public
+   * @prop {Function} revokeObjectURL?
+   * override URL#revokeObjectURL in unit tests
+   */
+  revokeObjectURL?: Function
 }
 /**
  * @public
@@ -127,6 +133,12 @@ interface ServiceProxySpecs {
    * @prop {IndexedQueue} queue
    */
   queue: IndexedQueue
+  /**
+   *
+   * @public
+   * @prop {Function} revokeObjectURL?
+   */
+  revokeObjectURL?: Function
 }
 
 /**
@@ -159,6 +171,8 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
     specs.worker = toWorker(worker, opts && opts.workify)
     specs.queue =
     opts && isIndexedQueue(opts.queue) ? opts.queue : newIndexedQueue()
+    specs.revokeObjectURL =
+    opts && opts.revokeObjectURL || URL.revokeObjectURL.bind(URL)
 
   	const proxy = new ServiceProxyClass(specs)
     log('ServiceProxyClass.newInstance', proxy)
@@ -206,6 +220,8 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
 	 */
 	constructor (spec: ServiceProxySpecs) {
   	this.worker = spec.worker
+    this.hasObjectUrl = isString(getObjectUrl(this.worker))
+    this.revokeObjectURL = spec.revokeObjectURL
     this.worker.onmessage = this.onmessage.bind(this)
     // TODO setup this.worker.onerror ?
     this.calls = spec.queue
@@ -223,6 +239,7 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    * @param  {WorkerServiceEvent} event
    */
   onmessage (event: WorkerServiceEvent) {
+    if (this.hasObjectUrl) { this.revokeObjectUrl() }
     if (!this.calls.has(event.data.uuid)) { return } // ignore invalid uuid
     const call = this.calls.pop(event.data.uuid)
     // ignore unknown method (Promise may timeout)
@@ -279,6 +296,21 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
   }
   /**
    * @private
+   * @method revokeObjectUrl
+   *
+   * @description
+   * if the given {Worker} has a `objectURL` {string} property,
+   * revoke the corresponding {Blob} and delete the property.
+   * see [webworkify#objectURL](https://github.com/substack/webworkify#workerobjecturl).
+   *
+   * @param {Worker} worker
+   */
+  revokeObjectUrl (): void {
+    this.hasObjectUrl = false
+    this.revokeObjectURL(getObjectUrl(this.worker))
+  }
+  /**
+   * @private
    * @prop {Worker} worker
    */
   worker: Worker
@@ -293,8 +325,23 @@ class ServiceProxyClass<S extends Object> implements ServiceProxy<S> {
    * @prop {number} timeout
    */
   timeout: number
+  /**
+   * @private
+   * @prop {boolean} hasObjectUrl
+   * @see ServiceProxyClass#revokeObjectUrl
+   */
+  hasObjectUrl: boolean
+  /**
+   * @private
+   * @prop {Function} revokeObjectURL
+   * @see ServiceProxyClass#revokeObjectUrl
+   */
+  revokeObjectURL: Function
 }
 /**
+ * @private
+ * @function toWorker
+ *
  * @param {any} val?
  *
  * @param {any} workify?
@@ -317,6 +364,18 @@ function toWorker (val?: any, workify?: any): Worker {
     if (isString(val)) { return new Worker(val) }
   } catch (err) { /* DOMException in some user agents */ }
   throw new TypeError('invalid argument')
+}
+
+/**
+ * @private
+ * @function getObjectUrl
+ *
+ * @param {Worker} worker
+ *
+ * @returns {string} [worker#objectURL](https://github.com/substack/webworkify#workerobjecturl)
+ */
+function getObjectUrl (worker: Worker): string {
+  return (<any>worker).objectURL
 }
 /**
  * @private

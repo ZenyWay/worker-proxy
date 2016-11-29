@@ -1,6 +1,6 @@
 {
   "name": "worker-proxy",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "thread-local proxy for a given service spawned in dedicated Worker thread",
   "main": "dist/proxy",
   "scripts": {
@@ -15,7 +15,7 @@
     "build:worker": "mkdirp build/worker && rimraf build/worker/* && tsc -p src/worker -outDir build/worker",
     "example": "npm run example:build && npm run example:serve",
     "example:serve": "http-server -c-1 -i -e html -o -p 6510 spec/example",
-    "preexample:build": "rimraf spec/example/*.js",
+    "preexample:build": "npm run dist && rimraf spec/example/*.js",
     "example:build": "concurrently \"npm run example:build:index\" \"npm run example:build:worker\"",
     "example:build:index": "browserify spec/example/index.ts -p [ tsify --project spec/example ] --exclude 'bluebird' --exclude 'tslib' --exclude 'debug' -o spec/example/index.js",
     "example:build:worker": "browserify spec/example/worker.ts -p [ tsify --project spec/example ] -o spec/example/worker.js",
@@ -56,7 +56,7 @@
   },
   "homepage": "https://github.com/zenyway/worker-proxy#readme",
   "dependencies": {
-    "@types/bluebird": "^2.0.30",
+    "@types/bluebird": "^3.0.36",
     "@types/debug": "0.0.29",
     "bluebird": "^3.4.6",
     "debug": "^2.3.3",
@@ -65,13 +65,13 @@
   },
   "devDependencies": {
     "@types/jasmine": "^2.5.38",
-    "@types/node": "^6.0.50",
+    "@types/node": "^6.0.51",
     "browserify": "^13.1.1",
     "browserify-istanbul": "^2.0.0",
     "concurrently": "^2.2.0",
     "coveralls": "^2.11.15",
     "cpx": "^1.5.0",
-    "eslint": "^3.10.2",
+    "eslint": "^3.11.1",
     "http-server": "^0.9.0",
     "istanbul": "^0.4.5",
     "jasmine-core": "^2.5.2",

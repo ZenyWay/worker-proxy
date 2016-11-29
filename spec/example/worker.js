@@ -1,4 +1,135 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+"use strict";
+;
+function isObject(val) {
+    return !!val && (typeof val === 'object');
+}
+exports.isObject = isObject;
+function isArrayLike(val) {
+    return isObject(val) && isNumber(val.length);
+}
+exports.isArrayLike = isArrayLike;
+function isFunction(val) {
+    return typeof val === 'function';
+}
+exports.isFunction = isFunction;
+function isString(val) {
+    return typeof val === 'string';
+}
+exports.isString = isString;
+function isNumber(val) {
+    return typeof val === 'number';
+}
+exports.isNumber = isNumber;
+function assert(val, errorConstructor, message) {
+    if (val)
+        return;
+    throw new errorConstructor(message);
+}
+exports.assert = assert;
+
+},{}],2:[function(require,module,exports){
+"use strict";
+;
+var utils_1 = require("../common/utils");
+var Promise = require("bluebird");
+var tslib_1 = require("tslib");
+var debug = require("debug");
+var log = debug('worker-proxy');
+var WorkerServiceClass = (function () {
+    function WorkerServiceClass(_a) {
+        var worker = _a.worker, service = _a.service, onterminate = _a.onterminate, methods = _a.methods;
+        this.worker = worker;
+        worker.onmessage = this.onmessage.bind(this);
+        log('worker.onmessage', 'hooked');
+        this.onterminate = onterminate;
+        this.service = service;
+        this.methods = methods;
+        log('WorkerService.methods', this.methods);
+    }
+    WorkerServiceClass.prototype.onmessage = function (event) {
+        var _this = this;
+        Promise.try(function () { return _this.callTargetMethod(event.data); })
+            .then(this.resolve.bind(this, event.data.uuid))
+            .catch(this.reject.bind(this, event.data.uuid));
+    };
+    WorkerServiceClass.prototype.callTargetMethod = function (spec) {
+        utils_1.assert(Number.isSafeInteger(spec.uuid), TypeError, "invalid argument");
+        utils_1.assert(isValidWorkerServiceMethodCall(spec), TypeError, "invalid argument");
+        var target = utils_1.isObject(this[spec.target]) ? this[spec.target] : this;
+        var isValidMethod = target !== this.service
+            ? utils_1.isFunction(target[spec.method]) : this.methods.indexOf(spec.method) >= 0;
+        var method = isValidMethod ? target[spec.method] : this.unknown;
+        return method.apply(target, spec.args || []);
+    };
+    WorkerServiceClass.prototype.getServiceMethods = function () {
+        log('WorkerService.getServiceProxy', this.methods);
+        return this.methods;
+    };
+    WorkerServiceClass.prototype.resolve = function (uuid, res) {
+        log('WorkerService.resolve', res);
+        this.worker.postMessage({ uuid: uuid, method: 'resolve', args: [res] });
+    };
+    WorkerServiceClass.prototype.reject = function (uuid, err) {
+        log('WorkerService.reject', err);
+        this.worker.postMessage({
+            uuid: uuid,
+            method: 'reject',
+            args: [{
+                    name: err.name,
+                    message: err.message,
+                    stack: err.stack
+                }]
+        });
+    };
+    WorkerServiceClass.prototype.unknown = function () {
+        return Promise.reject(new Error('unknown method'));
+    };
+    return WorkerServiceClass;
+}());
+WorkerServiceClass.hookService = function (spec) {
+    utils_1.assert(isValidServiceBinderSpec(spec), TypeError, 'invalid argument');
+    var config = tslib_1.__assign({}, spec);
+    config.methods = getPropertyNames(spec.service)
+        .filter(function (val) {
+        return utils_1.isFunction(spec.service[val]);
+    })
+        .filter(function (val) {
+        return !spec.methods || (spec.methods.indexOf(val) >= 0);
+    });
+    var workerService = new WorkerServiceClass(config);
+};
+function getPropertyNames(obj) {
+    var keys = Object.getOwnPropertyNames(obj)
+        .filter(function (key) { return key !== 'constructor'; })
+        .reduce(function (keys, key) { return (keys[key] = true) && keys; }, this || {});
+    var proto = Object.getPrototypeOf(obj);
+    return isObjectPrototype(proto) ?
+        Object.getOwnPropertyNames(keys) : getPropertyNames.call(keys, proto);
+}
+function isValidServiceBinderSpec(val) {
+    return utils_1.isObject(val) && isWorkerGlobalScope(val.worker) &&
+        utils_1.isObject(val.service) && (!val.onterminate || utils_1.isFunction(val.onterminate))
+        && isValidMethodsOption(val.methods);
+}
+function isValidMethodsOption(val) {
+    return !val || Array.isArray(val) && val.every(function (prop) { return utils_1.isString(prop); });
+}
+function isWorkerGlobalScope(val) {
+    return utils_1.isObject(val) && utils_1.isFunction(val.postMessage);
+}
+function isValidWorkerServiceMethodCall(val) {
+    return utils_1.isObject(val) && (!val.target || utils_1.isString(val.target)) &&
+        utils_1.isString(val.method) && (!val.args || utils_1.isArrayLike(val.args));
+}
+function isObjectPrototype(val) {
+    return utils_1.isObject(val) && !utils_1.isObject(Object.getPrototypeOf(val));
+}
+var hookService = WorkerServiceClass.hookService;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = hookService;
+
+},{"../common/utils":1,"bluebird":3,"debug":4,"tslib":8}],3:[function(require,module,exports){
 (function (process,global){
 /* @preserve
  * The MIT License (MIT)
@@ -5599,7 +5730,7 @@ module.exports = ret;
 },{"./es5":13}]},{},[4])(4)
 });                    ;if (typeof window !== 'undefined' && window !== null) {                               window.P = window.Promise;                                                     } else if (typeof self !== 'undefined' && self !== null) {                             self.P = self.Promise;                                                         }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":5}],2:[function(require,module,exports){
+},{"_process":7}],4:[function(require,module,exports){
 (function (process){
 
 /**
@@ -5780,7 +5911,7 @@ function localstorage(){
 }
 
 }).call(this,require('_process'))
-},{"./debug":3,"_process":5}],3:[function(require,module,exports){
+},{"./debug":5,"_process":7}],5:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -5982,7 +6113,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":4}],4:[function(require,module,exports){
+},{"ms":6}],6:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -6133,7 +6264,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's'
 }
 
-},{}],5:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -6315,7 +6446,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function (global){
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -6450,7 +6581,7 @@ var __generator;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],7:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 "use strict";
 ;
 var Promise = require("bluebird");
@@ -6472,10 +6603,10 @@ var newService = ServiceClass.newInstance;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = newService;
 
-},{"bluebird":1}],8:[function(require,module,exports){
+},{"bluebird":3}],10:[function(require,module,exports){
 "use strict";
 ;
-var worker_1 = require("../../src/worker");
+var worker_1 = require("../../dist/worker");
 var sample_service_1 = require("./sample-service");
 var debug = require("debug");
 var log = debug('example');
@@ -6494,135 +6625,4 @@ service
     onterminate: onterminate
 }); });
 
-},{"../../src/worker":10,"./sample-service":7,"debug":2}],9:[function(require,module,exports){
-"use strict";
-;
-function isObject(val) {
-    return !!val && (typeof val === 'object');
-}
-exports.isObject = isObject;
-function isArrayLike(val) {
-    return isObject(val) && isNumber(val.length);
-}
-exports.isArrayLike = isArrayLike;
-function isFunction(val) {
-    return typeof val === 'function';
-}
-exports.isFunction = isFunction;
-function isString(val) {
-    return typeof val === 'string';
-}
-exports.isString = isString;
-function isNumber(val) {
-    return typeof val === 'number';
-}
-exports.isNumber = isNumber;
-function assert(val, errorConstructor, message) {
-    if (val)
-        return;
-    throw new errorConstructor(message);
-}
-exports.assert = assert;
-
-},{}],10:[function(require,module,exports){
-"use strict";
-;
-var utils_1 = require("../common/utils");
-var Promise = require("bluebird");
-var tslib_1 = require("tslib");
-var debug = require("debug");
-var log = debug('worker-proxy');
-var WorkerServiceClass = (function () {
-    function WorkerServiceClass(_a) {
-        var worker = _a.worker, service = _a.service, onterminate = _a.onterminate, methods = _a.methods;
-        this.worker = worker;
-        worker.onmessage = this.onmessage.bind(this);
-        log('worker.onmessage', 'hooked');
-        this.onterminate = onterminate;
-        this.service = service;
-        this.methods = methods;
-        log('WorkerService.methods', this.methods);
-    }
-    WorkerServiceClass.prototype.onmessage = function (event) {
-        var _this = this;
-        Promise.try(function () { return _this.callTargetMethod(event.data); })
-            .then(this.resolve.bind(this, event.data.uuid))
-            .catch(this.reject.bind(this, event.data.uuid));
-    };
-    WorkerServiceClass.prototype.callTargetMethod = function (spec) {
-        utils_1.assert(Number.isSafeInteger(spec.uuid), TypeError, "invalid argument");
-        utils_1.assert(isValidWorkerServiceMethodCall(spec), TypeError, "invalid argument");
-        var target = utils_1.isObject(this[spec.target]) ? this[spec.target] : this;
-        var isValidMethod = target !== this.service
-            ? utils_1.isFunction(target[spec.method]) : this.methods.indexOf(spec.method) >= 0;
-        var method = isValidMethod ? target[spec.method] : this.unknown;
-        return method.apply(target, spec.args || []);
-    };
-    WorkerServiceClass.prototype.getServiceMethods = function () {
-        log('WorkerService.getServiceProxy', this.methods);
-        return this.methods;
-    };
-    WorkerServiceClass.prototype.resolve = function (uuid, res) {
-        log('WorkerService.resolve', res);
-        this.worker.postMessage({ uuid: uuid, method: 'resolve', args: [res] });
-    };
-    WorkerServiceClass.prototype.reject = function (uuid, err) {
-        log('WorkerService.reject', err);
-        this.worker.postMessage({
-            uuid: uuid,
-            method: 'reject',
-            args: [{
-                    name: err.name,
-                    message: err.message,
-                    stack: err.stack
-                }]
-        });
-    };
-    WorkerServiceClass.prototype.unknown = function () {
-        return Promise.reject(new Error('unknown method'));
-    };
-    return WorkerServiceClass;
-}());
-WorkerServiceClass.hookService = function (spec) {
-    utils_1.assert(isValidServiceBinderSpec(spec), TypeError, 'invalid argument');
-    var config = tslib_1.__assign({}, spec);
-    config.methods = getPropertyNames(spec.service)
-        .filter(function (val) {
-        return utils_1.isFunction(spec.service[val]);
-    })
-        .filter(function (val) {
-        return !spec.methods || (spec.methods.indexOf(val) >= 0);
-    });
-    var workerService = new WorkerServiceClass(config);
-};
-function getPropertyNames(obj) {
-    var keys = Object.getOwnPropertyNames(obj)
-        .filter(function (key) { return key !== 'constructor'; })
-        .reduce(function (keys, key) { return (keys[key] = true) && keys; }, this || {});
-    var proto = Object.getPrototypeOf(obj);
-    return isObjectPrototype(proto) ?
-        Object.getOwnPropertyNames(keys) : getPropertyNames.call(keys, proto);
-}
-function isValidServiceBinderSpec(val) {
-    return utils_1.isObject(val) && isWorkerGlobalScope(val.worker) &&
-        utils_1.isObject(val.service) && (!val.onterminate || utils_1.isFunction(val.onterminate))
-        && isValidMethodsOption(val.methods);
-}
-function isValidMethodsOption(val) {
-    return !val || Array.isArray(val) && val.every(function (prop) { return utils_1.isString(prop); });
-}
-function isWorkerGlobalScope(val) {
-    return utils_1.isObject(val) && utils_1.isFunction(val.postMessage);
-}
-function isValidWorkerServiceMethodCall(val) {
-    return utils_1.isObject(val) && (!val.target || utils_1.isString(val.target)) &&
-        utils_1.isString(val.method) && (!val.args || utils_1.isArrayLike(val.args));
-}
-function isObjectPrototype(val) {
-    return utils_1.isObject(val) && !utils_1.isObject(Object.getPrototypeOf(val));
-}
-var hookService = WorkerServiceClass.hookService;
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = hookService;
-
-},{"../common/utils":9,"bluebird":1,"debug":2,"tslib":6}]},{},[8]);
+},{"../../dist/worker":2,"./sample-service":9,"debug":4}]},{},[10]);
