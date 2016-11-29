@@ -107,7 +107,7 @@ service
 > into the worker code, e.g. with [`browserify`](http://browserify.org/).
 > [see below](#webworkify) for a
 > [`webworkify`](https://www.npmjs.com/package/webworkify)-like
-> example, allowing the worker-script to `live-require` its dependencies.
+> example, allowing the worker-script to `require` its dependencies 'live'.
 
 since npm version `2.1.0` (API 1.1) it is additionally possible to restrict
 the proxied service methods to a subset of the original service methods:
@@ -161,11 +161,14 @@ example, the approximation is not relevant.
 the above approach requires prior bundling of dependencies
 into the worker code, e.g. with [`browserify`](http://browserify.org/).
 this typically results in unnecessarily bloating the code
-because dependencies are bundled both in the main script and the proxy script.
+because bundles are generated both for the main script and the worker script,
+and common dependencies are bundled in both.
 
 `worker-proxy` builds on [`webworkify`](https://www.npmjs.com/package/webworkify)
-to optionally spawn a `Worker` that can `require` its dependencies.
-dependencies only need to be bundled once.
+to optionally spawn a `Worker` that can `require` its dependencies 'live':
+both the main and worker scripts can be bundled together
+with [`browserify`](http://browserify.org/),
+together with all required dependencies.
 
 to enable this, the main script should `require` the worker script,
 which should export its code as a function taking a single argument,
@@ -228,6 +231,13 @@ proxy.service
 .then(terminate) // shut down service and terminate Worker
 .catch(err => log(err) || proxy.kill()) // log shutdown error and force Worker termination
 ```
+
+### other example
+another webworkify-based example can be found
+[in this gist](https://gist.github.com/smcatala/bee0f411b08ec45933cb69264812a62e),
+and demonstrates how to spawn [opgp-service](https://github.com/ZenyWay/opgp-service)
+in a worker, with the main-thread proxy, the spawned service and
+all their dependencies all bundled in a single file.
 
 # <a name="contributing"></a> CONTRIBUTING
 see the [contribution guidelines](./CONTRIBUTING.md)
