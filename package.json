@@ -1,6 +1,6 @@
 {
   "name": "worker-proxy",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "thread-local proxy for a given service spawned in dedicated Worker thread",
   "main": "dist/proxy",
   "scripts": {
@@ -60,7 +60,7 @@
     "@types/debug": "0.0.29",
     "bluebird": "^3.4.6",
     "debug": "^2.3.3",
-    "tslib": "^1.1.0",
+    "tslib": "^1.2.0",
     "webworkify": "^1.4.0"
   },
   "devDependencies": {
@@ -68,10 +68,10 @@
     "@types/node": "^6.0.51",
     "browserify": "^13.1.1",
     "browserify-istanbul": "^2.0.0",
-    "concurrently": "^2.2.0",
+    "concurrently": "^3.1.0",
     "coveralls": "^2.11.15",
     "cpx": "^1.5.0",
-    "eslint": "^3.11.1",
+    "eslint": "^3.12.0",
     "http-server": "^0.9.0",
     "istanbul": "^0.4.5",
     "jasmine-core": "^2.5.2",
@@ -80,16 +80,16 @@
     "karma-chrome-launcher": "^2.0.0",
     "karma-coverage": "^1.1.1",
     "karma-firefox-launcher": "^1.0.0",
-    "karma-jasmine": "^1.0.2",
+    "karma-jasmine": "^1.1.0",
     "karma-jasmine-html-reporter": "^0.2.2",
-    "karma-junit-reporter": "^1.1.0",
+    "karma-junit-reporter": "^1.2.0",
     "karma-safari-launcher": "^1.0.0",
     "karma-spec-reporter": "0.0.26",
     "mkdirp": "^0.5.1",
     "remap-istanbul": "^0.7.0",
     "rimraf": "^2.5.4",
     "tsify": "^2.0.3",
-    "typescript": "^2.1.1",
+    "typescript": "^2.1.4",
     "uglifyify": "^3.0.4",
     "watchify": "^3.7.0"
   }
