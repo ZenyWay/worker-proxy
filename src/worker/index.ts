@@ -39,7 +39,7 @@ export interface ServiceBinder {
  * @public
  * @interface ServiceBinderSpec
  * @generic {S extends Object} type of Service
- * @prop {WorkerGlobalScope} self target `Worker`
+ * @prop {DedicatedWorkerGlobalScope} self target `Worker`
  * @prop {S extends Object} service
  * @prop {() => Promise<void>} onterminate `terminate` event handler
  */
@@ -47,7 +47,7 @@ export interface ServiceBinderSpec<S extends Object> {
   /**
    * @public
    * @prop {DedicatedWorkerGlobalScope} worker target `Worker`
-   * (`self` in {WorkerGlobalScope})
+   * (`self` in {DedicatedWorkerGlobalScope})
    */
   worker: DedicatedWorkerGlobalScope
   /**
@@ -187,7 +187,7 @@ class WorkerServiceClass<S extends Object> {
   onterminate: () => (void | Promise<void>)
   /**
    * @private
-   * @prop {WorkerGlobalScope} worker
+   * @prop {DedicatedWorkerGlobalScope} worker
    * @see {ServiceBinderSpec#worker}
    */
   worker: DedicatedWorkerGlobalScope
@@ -242,9 +242,9 @@ function isValidMethodsOption (val: any): val is string[] {
 }
 /**
  * @param {any} val
- * @return {val is WorkerGlobalScope}
+ * @return {val is DedicatedWorkerGlobalScope}
  */
-function isWorkerGlobalScope (val: any): val is WorkerGlobalScope {
+function isWorkerGlobalScope (val: any): val is DedicatedWorkerGlobalScope {
   return isObject(val) && isFunction(val.postMessage)
 }
 /**
