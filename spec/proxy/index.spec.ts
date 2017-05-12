@@ -15,7 +15,6 @@
 import newServiceProxy, { ServiceProxy } from '../../src/proxy'
 import Promise = require('bluebird')
 import { schedule, unwrap } from '../support/jasmine-bluebird'
-import { __assign as assign } from 'tslib'
 
 interface PromiseResult<T> {
   val?: T
@@ -222,7 +221,7 @@ describe('factory newServiceProxy<S extends Object>(worker: string|Worker, opts?
     let proxies: any[]
     let res: PromiseResult<any>
     beforeEach((done) => {
-      const brokenQueue = assign({}, queue, { length: 42 })
+      const brokenQueue = { ...queue, length: 42 }
       const values = [ undefined, 42, () => { return 'foo' }, brokenQueue ]
       proxies = values.map(val =>
         ((<Function>newServiceProxy)(newMockWorker(workerFn), { queue: val })))

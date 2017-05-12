@@ -35,7 +35,7 @@ function onterminate () {
 service
 .tap(service => console.log('worker service', service))
 .then(service => hookService({
-  worker: self,
+  worker: <DedicatedWorkerGlobalScope>self,
   service: service,
   onterminate: onterminate
 }))

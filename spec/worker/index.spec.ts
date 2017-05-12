@@ -15,7 +15,7 @@
 import hookService from '../../src/worker'
 import Promise = require('bluebird')
 
-let worker: WorkerGlobalScope
+let worker: DedicatedWorkerGlobalScope
 let service: {
   syncwork: (foo: string, bar: string) => number
   asyncwork: (foo: string, bar: string) => Promise<number>
@@ -41,7 +41,7 @@ beforeEach(() => {
   })
 })
 
-describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, ' +
+describe('function hookService <S extends Object>({ worker: DedicatedWorkerGlobalScope, ' +
 'service: S, onterminate?: () => Promise<void>, methods?: string[] }): void', () => {
   it('should add an "onmessage" handler to the given worker', () => {
     expect(worker.onmessage).toEqual(jasmine.any(Function))
@@ -54,7 +54,7 @@ describe('function hookService <S extends Object>({ worker: WorkerGlobalScope, '
     })
   })
 
-  describe('when "worker" is not defined or not a WorkerGlobalScope object',
+  describe('when "worker" is not defined or not a DedicatedWorkerGlobalScope object',
   () => {
     it('should throw an "invalid argument" TypeError', () => {
       expect(() => hookService(<any>{

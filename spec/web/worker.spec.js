@@ -23,15 +23,17 @@ var __param;
 var __metadata;
 var __awaiter;
 var __generator;
+var __exportStar;
+var __values;
+var __read;
+var __spread;
+var __await;
+var __asyncGenerator;
+var __asyncDelegator;
+var __asyncValues;
 (function (factory) {
     var root = typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : {};
-    if (typeof System === "object" && typeof System.register === "function") {
-        System.register("tslib", [], function (exporter) {
-            factory(createExporter(root, exporter));
-            return { setters: [], execute: function() { } };
-        });
-    }
-    else if (typeof define === "function" && define.amd) {
+    if (typeof define === "function" && define.amd) {
         define("tslib", ["exports"], function (exports) { factory(createExporter(root, createExporter(exports))); });
     }
     else if (typeof module === "object" && typeof module.exports === "object") {
@@ -40,14 +42,17 @@ var __generator;
     else {
         factory(createExporter(root));
     }
-
     function createExporter(exports, previous) {
         return function (id, v) { return exports[id] = previous ? previous(id, v) : v; };
     }
 })
 (function (exporter) {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+
     __extends = function (d, b) {
-        for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+        extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
@@ -64,7 +69,7 @@ var __generator;
         var t = {};
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
             t[p] = s[p];
-        if (typeof Object.getOwnPropertySymbols === "function")
+        if (s != null && typeof Object.getOwnPropertySymbols === "function")
             for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
                 t[p[i]] = s[p[i]];
         return t;
@@ -90,13 +95,13 @@ var __generator;
             function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
             function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
             function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-            step((generator = generator.apply(thisArg, _arguments)).next());
+            step((generator = generator.apply(thisArg, _arguments || [])).next());
         });
     };
 
     __generator = function (thisArg, body) {
-        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
-        return { next: verb(0), "throw": verb(1), "return": verb(2) };
+        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+        return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
         function verb(n) { return function (v) { return step([n, v]); }; }
         function step(op) {
             if (f) throw new TypeError("Generator is already executing.");
@@ -122,6 +127,72 @@ var __generator;
         }
     };
 
+    __exportStar = function (m, exports) {
+        for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+    };
+
+    __values = function (o) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+        if (m) return m.call(o);
+        return {
+            next: function () {
+                if (o && i >= o.length) o = void 0;
+                return { value: o && o[i++], done: !o };
+            }
+        };
+    };
+
+    __read = function (o, n) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator];
+        if (!m) return o;
+        var i = m.call(o), r, ar = [], e;
+        try {
+            while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+        }
+        catch (error) { e = { error: error }; }
+        finally {
+            try {
+                if (r && !r.done && (m = i["return"])) m.call(i);
+            }
+            finally { if (e) throw e.error; }
+        }
+        return ar;
+    };
+
+    __spread = function () {
+        for (var ar = [], i = 0; i < arguments.length; i++)
+            ar = ar.concat(__read(arguments[i]));
+        return ar;
+    };
+
+    __await = function (v) {
+        return this instanceof __await ? (this.v = v, this) : new __await(v);
+    };
+
+    __asyncGenerator = function (thisArg, _arguments, generator) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var g = generator.apply(thisArg, _arguments || []), i, q = [];
+        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+        function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+        function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+        function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+        function fulfill(value) { resume("next", value); }
+        function reject(value) { resume("throw", value); }
+        function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+    };
+
+    __asyncDelegator = function (o) {
+        var i, p;
+        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+        function verb(n) { if (o[n]) i[n] = function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : v; }; }
+    };
+
+    __asyncValues = function (o) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var m = o[Symbol.asyncIterator];
+        return m ? m.call(o) : typeof __values === "function" ? __values(o) : o[Symbol.iterator]();
+    };
+
     exporter("__extends", __extends);
     exporter("__assign", __assign);
     exporter("__rest", __rest);
@@ -130,13 +201,20 @@ var __generator;
     exporter("__metadata", __metadata);
     exporter("__awaiter", __awaiter);
     exporter("__generator", __generator);
+    exporter("__exportStar", __exportStar);
+    exporter("__values", __values);
+    exporter("__read", __read);
+    exporter("__spread", __spread);
+    exporter("__await", __await);
+    exporter("__asyncGenerator", __asyncGenerator);
+    exporter("__asyncDelegator", __asyncDelegator);
+    exporter("__asyncValues", __asyncValues);
 });
-
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],2:[function(require,module,exports){
-"use strict";var worker_1=require("../../src/worker"),Promise=require("bluebird"),worker,service,onterminate;beforeEach(function(){worker=jasmine.createSpyObj("worker",["postMessage"]),service=Object.create(jasmine.createSpyObj("service",["asyncwork","syncwork","stop"])),service.syncwork.and.returnValue("foo"),service.asyncwork.and.returnValue(Promise.resolve("foo")),onterminate=service.stop.bind(service)}),beforeEach(function(){worker_1.default({worker:worker,service:service,onterminate:onterminate})}),describe("function hookService <S extends Object>({ worker: WorkerGlobalScope, service: S, onterminate?: () => Promise<void>, methods?: string[] }): void",function(){it('should add an "onmessage" handler to the given worker',function(){expect(worker.onmessage).toEqual(jasmine.any(Function))}),describe("when the supplied argument is not an object",function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default(42)}).toThrowError(TypeError,"invalid argument")})}),describe('when "worker" is not defined or not a WorkerGlobalScope object',function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default({service:service,onterminate:onterminate})}).toThrowError(TypeError,"invalid argument"),expect(function(){return worker_1.default({worker:{},service:service,onterminate:onterminate})}).toThrowError(TypeError,"invalid argument")})}),describe('when "service" is not defined or not an object',function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default({worker:worker,onterminate:onterminate})}).toThrowError(TypeError,"invalid argument"),expect(function(){return worker_1.default({worker:worker,service:42,onterminate:onterminate})}).toThrowError(TypeError,"invalid argument")})}),describe('when "onterminate" is defined but not a method',function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default({worker:worker,service:service})}).not.toThrow(),expect(function(){return worker_1.default({worker:worker,service:service,onterminate:42})}).toThrowError(TypeError,"invalid argument")})}),describe('when "methods" is defined but not a an array of strings',function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default({worker:worker,service:service})}).not.toThrow(),expect(function(){return worker_1.default({worker:worker,service:service,methods:["foo",42]})}).toThrowError(TypeError,"invalid argument")})}),describe('when "methods" is an array of strings',function(){beforeEach(function(){var e=[{uuid:42,target:"service",method:"syncwork",args:["foo","bar"]},{uuid:42,target:"service",method:"asyncwork",args:["foo","bar"]}];worker_1.default({worker:worker,service:service,methods:["syncwork"]}),e.forEach(function(e){return worker.onmessage({data:e})})}),it('should expose only the service methods listed in the "methods" array',function(){expect(service.syncwork).toHaveBeenCalledTimes(1),expect(service.asyncwork).not.toHaveBeenCalled(),expect(service.stop).not.toHaveBeenCalled()})}),describe("handler onmessage (event: WorkerServiceEvent): void",function(){var e,r;beforeEach(function(){e={uuid:42,target:"service",method:"syncwork",args:["foo","bar"]},r=function(e,r){r&&worker.postMessage.and.callFake(function(){return setTimeout(r)}),worker.onmessage({data:e})}}),it('should call the target method as specified in "event.data"',function(){r(e);var t=expect(service.syncwork);t.toHaveBeenCalledWith.apply(t,e.args),expect(service.syncwork).toHaveBeenCalledTimes(1),expect(service.asyncwork).not.toHaveBeenCalled(),expect(service.stop).not.toHaveBeenCalled()}),describe('when "event.data.args" is falsy',function(){beforeEach(function(t){delete e.args,r(e,t)}),it('should call the target method as specified in "event.data" with no arguments',function(){expect(service.syncwork).toHaveBeenCalledTimes(1),expect(service.syncwork).toHaveBeenCalledWith()})}),describe('when "event.data.args" is truthy but not Array-like',function(){beforeEach(function(t){e.args={foo:42},r(e,t)}),it('should post a request back to reject with an "invalid argument" TypeError',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"TypeError",message:"invalid argument",stack:jasmine.anything()}]})})}),describe('when "event.data.uuid" is not a safe integer',function(){beforeEach(function(t){e.uuid=Number.MAX_VALUE,r(e,t)}),it('should post a request back to reject with an "invalid argument" TypeError',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:Number.MAX_VALUE,method:"reject",args:[{name:"TypeError",message:"invalid argument",stack:jasmine.anything()}]})})}),describe('when "event.data.target" is not a string',function(){beforeEach(function(t){e.target=64,r(e,t)}),it('should post a request back to reject with an "invalid argument" TypeError',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"TypeError",message:"invalid argument",stack:jasmine.anything()}]})})}),describe('when "event.data.method" is not a string',function(){beforeEach(function(t){e.method=64,r(e,t)}),it('should post a request back to reject with an "invalid argument" TypeError',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"TypeError",message:"invalid argument",stack:jasmine.anything()}]})})}),describe('when "event.data.target" is unknown',function(){beforeEach(function(t){e.target="shazam",r(e,t)}),it('should post a request back to reject with an "unknown method" Error',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"Error",message:"unknown method",stack:jasmine.anything()}]})})}),describe("when the specified target method is unknown",function(){beforeEach(function(t){e.method="shazam",r(e,t)}),it('should post a request back to reject with an "unknown method" Error',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"Error",message:"unknown method",stack:jasmine.anything()}]})})}),describe("when the target method successfully returns",function(){beforeEach(function(t){r(e,t)}),it("should post a request back to resolve to the returned value",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"resolve",args:["foo"]})})}),describe("when the target method successfully resolves",function(){beforeEach(function(t){e.method="asyncwork",r(e,t)}),it("should post a request back to resolve to the resolved value",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"resolve",args:["foo"]})})}),describe("when the target method throws",function(){beforeEach(function(t){e.method="syncwork",service.syncwork.and.callFake(function(){throw new Error("boom")}),r(e,t)}),it("should post a request back to reject with the corresponding error",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"Error",message:"boom",stack:jasmine.anything()}]})})}),describe("when the target method rejects",function(){beforeEach(function(t){e.method="asyncwork",service.asyncwork.and.returnValue(Promise.reject(new Error("boom"))),r(e,t)}),it("should post a request back to reject with the corresponding error",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"Error",message:"boom",stack:jasmine.anything()}]})})}),describe('when the target method specification is { method: "getServiceMethods" }',function(){beforeEach(function(t){delete e.target,e.method="getServiceMethods",r(e,t)}),it("should post a request back to resolve to the list of service methods",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"resolve",args:[["asyncwork","syncwork","stop"]]})})})})});
+"use strict";Object.defineProperty(exports,"__esModule",{value:!0});var worker_1=require("../../src/worker"),Promise=require("bluebird"),worker,service,onterminate;beforeEach(function(){worker=jasmine.createSpyObj("worker",["postMessage"]),service=Object.create(jasmine.createSpyObj("service",["asyncwork","syncwork","stop"])),service.syncwork.and.returnValue("foo"),service.asyncwork.and.returnValue(Promise.resolve("foo")),onterminate=service.stop.bind(service)}),beforeEach(function(){worker_1.default({worker:worker,service:service,onterminate:onterminate})}),describe("function hookService <S extends Object>({ worker: DedicatedWorkerGlobalScope, service: S, onterminate?: () => Promise<void>, methods?: string[] }): void",function(){it('should add an "onmessage" handler to the given worker',function(){expect(worker.onmessage).toEqual(jasmine.any(Function))}),describe("when the supplied argument is not an object",function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default(42)}).toThrowError(TypeError,"invalid argument")})}),describe('when "worker" is not defined or not a DedicatedWorkerGlobalScope object',function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default({service:service,onterminate:onterminate})}).toThrowError(TypeError,"invalid argument"),expect(function(){return worker_1.default({worker:{},service:service,onterminate:onterminate})}).toThrowError(TypeError,"invalid argument")})}),describe('when "service" is not defined or not an object',function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default({worker:worker,onterminate:onterminate})}).toThrowError(TypeError,"invalid argument"),expect(function(){return worker_1.default({worker:worker,service:42,onterminate:onterminate})}).toThrowError(TypeError,"invalid argument")})}),describe('when "onterminate" is defined but not a method',function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default({worker:worker,service:service})}).not.toThrow(),expect(function(){return worker_1.default({worker:worker,service:service,onterminate:42})}).toThrowError(TypeError,"invalid argument")})}),describe('when "methods" is defined but not a an array of strings',function(){it('should throw an "invalid argument" TypeError',function(){expect(function(){return worker_1.default({worker:worker,service:service})}).not.toThrow(),expect(function(){return worker_1.default({worker:worker,service:service,methods:["foo",42]})}).toThrowError(TypeError,"invalid argument")})}),describe('when "methods" is an array of strings',function(){beforeEach(function(){var e=[{uuid:42,target:"service",method:"syncwork",args:["foo","bar"]},{uuid:42,target:"service",method:"asyncwork",args:["foo","bar"]}];worker_1.default({worker:worker,service:service,methods:["syncwork"]}),e.forEach(function(e){return worker.onmessage({data:e})})}),it('should expose only the service methods listed in the "methods" array',function(){expect(service.syncwork).toHaveBeenCalledTimes(1),expect(service.asyncwork).not.toHaveBeenCalled(),expect(service.stop).not.toHaveBeenCalled()})}),describe("handler onmessage (event: WorkerServiceEvent): void",function(){var e,r;beforeEach(function(){e={uuid:42,target:"service",method:"syncwork",args:["foo","bar"]},r=function(e,r){r&&worker.postMessage.and.callFake(function(){return setTimeout(r)}),worker.onmessage({data:e})}}),it('should call the target method as specified in "event.data"',function(){r(e);var t=expect(service.syncwork);t.toHaveBeenCalledWith.apply(t,e.args),expect(service.syncwork).toHaveBeenCalledTimes(1),expect(service.asyncwork).not.toHaveBeenCalled(),expect(service.stop).not.toHaveBeenCalled()}),describe('when "event.data.args" is falsy',function(){beforeEach(function(t){delete e.args,r(e,t)}),it('should call the target method as specified in "event.data" with no arguments',function(){expect(service.syncwork).toHaveBeenCalledTimes(1),expect(service.syncwork).toHaveBeenCalledWith()})}),describe('when "event.data.args" is truthy but not Array-like',function(){beforeEach(function(t){e.args={foo:42},r(e,t)}),it('should post a request back to reject with an "invalid argument" TypeError',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"TypeError",message:"invalid argument",stack:jasmine.anything()}]})})}),describe('when "event.data.uuid" is not a safe integer',function(){beforeEach(function(t){e.uuid=Number.MAX_VALUE,r(e,t)}),it('should post a request back to reject with an "invalid argument" TypeError',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:Number.MAX_VALUE,method:"reject",args:[{name:"TypeError",message:"invalid argument",stack:jasmine.anything()}]})})}),describe('when "event.data.target" is not a string',function(){beforeEach(function(t){e.target=64,r(e,t)}),it('should post a request back to reject with an "invalid argument" TypeError',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"TypeError",message:"invalid argument",stack:jasmine.anything()}]})})}),describe('when "event.data.method" is not a string',function(){beforeEach(function(t){e.method=64,r(e,t)}),it('should post a request back to reject with an "invalid argument" TypeError',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"TypeError",message:"invalid argument",stack:jasmine.anything()}]})})}),describe('when "event.data.target" is unknown',function(){beforeEach(function(t){e.target="shazam",r(e,t)}),it('should post a request back to reject with an "unknown method" Error',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"Error",message:"unknown method",stack:jasmine.anything()}]})})}),describe("when the specified target method is unknown",function(){beforeEach(function(t){e.method="shazam",r(e,t)}),it('should post a request back to reject with an "unknown method" Error',function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"Error",message:"unknown method",stack:jasmine.anything()}]})})}),describe("when the target method successfully returns",function(){beforeEach(function(t){r(e,t)}),it("should post a request back to resolve to the returned value",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"resolve",args:["foo"]})})}),describe("when the target method successfully resolves",function(){beforeEach(function(t){e.method="asyncwork",r(e,t)}),it("should post a request back to resolve to the resolved value",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"resolve",args:["foo"]})})}),describe("when the target method throws",function(){beforeEach(function(t){e.method="syncwork",service.syncwork.and.callFake(function(){throw new Error("boom")}),r(e,t)}),it("should post a request back to reject with the corresponding error",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"Error",message:"boom",stack:jasmine.anything()}]})})}),describe("when the target method rejects",function(){beforeEach(function(t){e.method="asyncwork",service.asyncwork.and.returnValue(Promise.reject(new Error("boom"))),r(e,t)}),it("should post a request back to reject with the corresponding error",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"reject",args:[{name:"Error",message:"boom",stack:jasmine.anything()}]})})}),describe('when the target method specification is { method: "getServiceMethods" }',function(){beforeEach(function(t){delete e.target,e.method="getServiceMethods",r(e,t)}),it("should post a request back to resolve to the list of service methods",function(){expect(worker.postMessage).toHaveBeenCalledTimes(1),expect(worker.postMessage).toHaveBeenCalledWith({uuid:42,method:"resolve",args:[["asyncwork","syncwork","stop"]]})})})})});
 },{"../../src/worker":4,"bluebird":undefined}],3:[function(require,module,exports){
-"use strict";function isObject(t){return!!t&&"object"==typeof t}function isArrayLike(t){return isObject(t)&&isNumber(t.length)}function isFunction(t){return"function"==typeof t}function isString(t){return"string"==typeof t}function isNumber(t){return"number"==typeof t}function assert(t,i,r){if(!t)throw new i(r)}exports.isObject=isObject,exports.isArrayLike=isArrayLike,exports.isFunction=isFunction,exports.isString=isString,exports.isNumber=isNumber,exports.assert=assert;
+"use strict";function isObject(t){return!!t&&"object"==typeof t}function isArrayLike(t){return isObject(t)&&isNumber(t.length)}function isFunction(t){return"function"==typeof t}function isString(t){return"string"==typeof t}function isNumber(t){return"number"==typeof t}function assert(t,e,r){if(!t)throw new e(r)}Object.defineProperty(exports,"__esModule",{value:!0}),exports.isObject=isObject,exports.isArrayLike=isArrayLike,exports.isFunction=isFunction,exports.isString=isString,exports.isNumber=isNumber,exports.assert=assert;
 },{}],4:[function(require,module,exports){
-"use strict";function getPropertyNames(e){var t=Object.getOwnPropertyNames(e).filter(function(e){return"constructor"!==e}).reduce(function(e,t){return(e[t]=!0)&&e},this||{}),r=Object.getPrototypeOf(e);return isObjectPrototype(r)?Object.getOwnPropertyNames(t):getPropertyNames.call(t,r)}function isValidServiceBinderSpec(e){return utils_1.isObject(e)&&isWorkerGlobalScope(e.worker)&&utils_1.isObject(e.service)&&(!e.onterminate||utils_1.isFunction(e.onterminate))&&isValidMethodsOption(e.methods)}function isValidMethodsOption(e){return!e||Array.isArray(e)&&e.every(function(e){return utils_1.isString(e)})}function isWorkerGlobalScope(e){return utils_1.isObject(e)&&utils_1.isFunction(e.postMessage)}function isValidWorkerServiceMethodCall(e){return utils_1.isObject(e)&&(!e.target||utils_1.isString(e.target))&&utils_1.isString(e.method)&&(!e.args||utils_1.isArrayLike(e.args))}function isObjectPrototype(e){return utils_1.isObject(e)&&!utils_1.isObject(Object.getPrototypeOf(e))}var utils_1=require("../common/utils"),Promise=require("bluebird"),tslib_1=require("tslib"),debug=require("debug"),log=debug("worker-proxy"),WorkerServiceClass=function(){function e(e){var t=e.worker,r=e.service,i=e.onterminate,s=e.methods;this.worker=t,t.onmessage=this.onmessage.bind(this),log("worker.onmessage","hooked"),this.onterminate=i,this.service=r,this.methods=s,log("WorkerService.methods",this.methods)}return e.prototype.onmessage=function(e){var t=this;Promise.try(function(){return t.callTargetMethod(e.data)}).then(this.resolve.bind(this,e.data.uuid)).catch(this.reject.bind(this,e.data.uuid))},e.prototype.callTargetMethod=function(e){utils_1.assert(Number.isSafeInteger(e.uuid),TypeError,"invalid argument"),utils_1.assert(isValidWorkerServiceMethodCall(e),TypeError,"invalid argument");var t=utils_1.isObject(this[e.target])?this[e.target]:this,r=t!==this.service?utils_1.isFunction(t[e.method]):this.methods.indexOf(e.method)>=0,i=r?t[e.method]:this.unknown;return i.apply(t,e.args||[])},e.prototype.getServiceMethods=function(){return log("WorkerService.getServiceProxy",this.methods),this.methods},e.prototype.resolve=function(e,t){log("WorkerService.resolve",t),this.worker.postMessage({uuid:e,method:"resolve",args:[t]})},e.prototype.reject=function(e,t){log("WorkerService.reject",t),this.worker.postMessage({uuid:e,method:"reject",args:[{name:t.name,message:t.message,stack:t.stack}]})},e.prototype.unknown=function(){return Promise.reject(new Error("unknown method"))},e}();WorkerServiceClass.hookService=function(e){utils_1.assert(isValidServiceBinderSpec(e),TypeError,"invalid argument");var t=tslib_1.__assign({},e);t.methods=getPropertyNames(e.service).filter(function(t){return utils_1.isFunction(e.service[t])}).filter(function(t){return!e.methods||e.methods.indexOf(t)>=0});new WorkerServiceClass(t)};var hookService=WorkerServiceClass.hookService;Object.defineProperty(exports,"__esModule",{value:!0}),exports.default=hookService;
+"use strict";function getPropertyNames(e){var t=Object.getOwnPropertyNames(e).filter(function(e){return"constructor"!==e}).reduce(function(e,t){return(e[t]=!0)&&e},this||{}),r=Object.getPrototypeOf(e);return isObjectPrototype(r)?Object.getOwnPropertyNames(t):getPropertyNames.call(t,r)}function isValidServiceBinderSpec(e){return utils_1.isObject(e)&&isWorkerGlobalScope(e.worker)&&utils_1.isObject(e.service)&&(!e.onterminate||utils_1.isFunction(e.onterminate))&&isValidMethodsOption(e.methods)}function isValidMethodsOption(e){return!e||Array.isArray(e)&&e.every(function(e){return utils_1.isString(e)})}function isWorkerGlobalScope(e){return utils_1.isObject(e)&&utils_1.isFunction(e.postMessage)}function isValidWorkerServiceMethodCall(e){return utils_1.isObject(e)&&(!e.target||utils_1.isString(e.target))&&utils_1.isString(e.method)&&(!e.args||utils_1.isArrayLike(e.args))}function isObjectPrototype(e){return utils_1.isObject(e)&&!utils_1.isObject(Object.getPrototypeOf(e))}Object.defineProperty(exports,"__esModule",{value:!0});var tslib_1=require("tslib"),utils_1=require("../common/utils"),Promise=require("bluebird"),debug=require("debug"),log=debug("worker-proxy"),WorkerServiceClass=function(){function e(e){var t=e.worker,r=e.service,i=e.onterminate,s=e.methods;this.worker=t,t.onmessage=this.onmessage.bind(this),log("worker.onmessage","hooked"),this.onterminate=i,this.service=r,this.methods=s,log("WorkerService.methods",this.methods)}return e.prototype.onmessage=function(e){var t=this;Promise.try(function(){return t.callTargetMethod(e.data)}).then(this.resolve.bind(this,e.data.uuid)).catch(this.reject.bind(this,e.data.uuid))},e.prototype.callTargetMethod=function(e){utils_1.assert(Number.isSafeInteger(e.uuid),TypeError,"invalid argument"),utils_1.assert(isValidWorkerServiceMethodCall(e),TypeError,"invalid argument");var t=utils_1.isObject(this[e.target])?this[e.target]:this,r=t!==this.service?utils_1.isFunction(t[e.method]):this.methods.indexOf(e.method)>=0,i=r?t[e.method]:this.unknown;return i.apply(t,e.args||[])},e.prototype.getServiceMethods=function(){return log("WorkerService.getServiceProxy",this.methods),this.methods},e.prototype.resolve=function(e,t){log("WorkerService.resolve",t),this.worker.postMessage({uuid:e,method:"resolve",args:[t]})},e.prototype.reject=function(e,t){log("WorkerService.reject",t),this.worker.postMessage({uuid:e,method:"reject",args:[{name:t.name,message:t.message,stack:t.stack}]})},e.prototype.unknown=function(){return Promise.reject(new Error("unknown method"))},e}();WorkerServiceClass.hookService=function(e){utils_1.assert(isValidServiceBinderSpec(e),TypeError,"invalid argument");var t=tslib_1.__assign({},e);t.methods=getPropertyNames(e.service).filter(function(t){return utils_1.isFunction(e.service[t])}).filter(function(t){return!e.methods||e.methods.indexOf(t)>=0});new WorkerServiceClass(t)};var hookService=WorkerServiceClass.hookService;exports.default=hookService;
 },{"../common/utils":3,"bluebird":undefined,"debug":undefined,"tslib":1}]},{},[2]);

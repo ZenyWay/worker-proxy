@@ -22,8 +22,6 @@ from '../common/utils'
 
 import Promise = require('bluebird')
 
-import { __assign as assign } from 'tslib'
-
 import debug = require('debug')
 const log = debug('worker-proxy')
 /**
@@ -48,10 +46,10 @@ export interface ServiceBinder {
 export interface ServiceBinderSpec<S extends Object> {
   /**
    * @public
-   * @prop {WorkerGlobalScope} worker target `Worker`
+   * @prop {DedicatedWorkerGlobalScope} worker target `Worker`
    * (`self` in {WorkerGlobalScope})
    */
-  worker: WorkerGlobalScope
+  worker: DedicatedWorkerGlobalScope
   /**
    * @public
    * @prop {S extends Object} service?
@@ -86,7 +84,7 @@ class WorkerServiceClass<S extends Object> {
 	static hookService: ServiceBinder =
   function <S extends Object>(spec: ServiceBinderSpec<S>) {
     assert(isValidServiceBinderSpec(spec), TypeError, 'invalid argument')
-    const config: ServiceBinderSpec<S> = assign({}, spec)
+    const config: ServiceBinderSpec<S> = { ...spec }
     config.methods = getPropertyNames(spec.service)
     .filter(val =>
       isFunction(spec.service[val]))
@@ -192,7 +190,7 @@ class WorkerServiceClass<S extends Object> {
    * @prop {WorkerGlobalScope} worker
    * @see {ServiceBinderSpec#worker}
    */
-  worker: WorkerGlobalScope
+  worker: DedicatedWorkerGlobalScope
   /**
    * @private
    * @prop {S} service
