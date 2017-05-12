@@ -1,5 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 ;
 function isObject(val) {
     return !!val && (typeof val === 'object');
@@ -30,10 +31,11 @@ exports.assert = assert;
 
 },{}],2:[function(require,module,exports){
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var tslib_1 = require("tslib");
 ;
 var utils_1 = require("../common/utils");
 var Promise = require("bluebird");
-var tslib_1 = require("tslib");
 var debug = require("debug");
 var log = debug('worker-proxy');
 var WorkerServiceClass = (function () {
@@ -126,7 +128,6 @@ function isObjectPrototype(val) {
     return utils_1.isObject(val) && !utils_1.isObject(Object.getPrototypeOf(val));
 }
 var hookService = WorkerServiceClass.hookService;
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = hookService;
 
 },{"../common/utils":1,"bluebird":3,"debug":4,"tslib":8}],3:[function(require,module,exports){
@@ -134,7 +135,7 @@ exports.default = hookService;
 /* @preserve
  * The MIT License (MIT)
  * 
- * Copyright (c) 2013-2015 Petka Antonov
+ * Copyright (c) 2013-2017 Petka Antonov
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -156,7 +157,7 @@ exports.default = hookService;
  * 
  */
 /**
- * bluebird build version 3.4.6
+ * bluebird build version 3.5.0
  * Features enabled: core, race, call_get, generators, map, nodeify, promisify, props, reduce, settle, some, using, timers, filter, any, each
 */
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Promise=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof _dereq_=="function"&&_dereq_;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof _dereq_=="function"&&_dereq_;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
@@ -310,11 +311,6 @@ if (!util.hasDevTools) {
         }
     };
 }
-
-Async.prototype.invokeFirst = function (fn, receiver, arg) {
-    this._normalQueue.unshift(fn, receiver, arg);
-    this._queueTick();
-};
 
 Async.prototype._drainQueue = function(queue) {
     while (queue.length() > 0) {
@@ -1095,6 +1091,7 @@ Promise.config = function(opts) {
             Promise.prototype._fireEvent = defaultFireEvent;
         }
     }
+    return Promise;
 };
 
 function defaultFireEvent() { return false; }
@@ -1365,7 +1362,7 @@ function stackFramesAsArray(error) {
             break;
         }
     }
-    if (i > 0) {
+    if (i > 0 && error.name != "SyntaxError") {
         stack = stack.slice(i);
     }
     return stack;
@@ -1378,7 +1375,7 @@ function parseStackAndMessage(error) {
                 ? stackFramesAsArray(error) : ["    (No stack trace)"];
     return {
         message: message,
-        stack: cleanStack(stack)
+        stack: error.name == "SyntaxError" ? stack : cleanStack(stack)
     };
 }
 
@@ -2016,10 +2013,11 @@ Promise.filter = function (promises, fn, options) {
 
 },{}],15:[function(_dereq_,module,exports){
 "use strict";
-module.exports = function(Promise, tryConvertToPromise) {
+module.exports = function(Promise, tryConvertToPromise, NEXT_FILTER) {
 var util = _dereq_("./util");
 var CancellationError = Promise.CancellationError;
 var errorObj = util.errorObj;
+var catchFilter = _dereq_("./catch_filter")(NEXT_FILTER);
 
 function PassThroughHandlerContext(promise, type, handler) {
     this.promise = promise;
@@ -2071,7 +2069,9 @@ function finallyHandler(reasonOrValue) {
         var ret = this.isFinallyHandler()
             ? handler.call(promise._boundValue())
             : handler.call(promise._boundValue(), reasonOrValue);
-        if (ret !== undefined) {
+        if (ret === NEXT_FILTER) {
+            return ret;
+        } else if (ret !== undefined) {
             promise._setReturnedNonUndefined();
             var maybePromise = tryConvertToPromise(ret, promise);
             if (maybePromise instanceof Promise) {
@@ -2120,14 +2120,46 @@ Promise.prototype["finally"] = function (handler) {
                              finallyHandler);
 };
 
+
 Promise.prototype.tap = function (handler) {
     return this._passThrough(handler, 1, finallyHandler);
+};
+
+Promise.prototype.tapCatch = function (handlerOrPredicate) {
+    var len = arguments.length;
+    if(len === 1) {
+        return this._passThrough(handlerOrPredicate,
+                                 1,
+                                 undefined,
+                                 finallyHandler);
+    } else {
+         var catchInstances = new Array(len - 1),
+            j = 0, i;
+        for (i = 0; i < len - 1; ++i) {
+            var item = arguments[i];
+            if (util.isObject(item)) {
+                catchInstances[j++] = item;
+            } else {
+                return Promise.reject(new TypeError(
+                    "tapCatch statement predicate: "
+                    + "expecting an object but got " + util.classString(item)
+                ));
+            }
+        }
+        catchInstances.length = j;
+        var handler = arguments[i];
+        return this._passThrough(catchFilter(catchInstances, handler, this),
+                                 1,
+                                 undefined,
+                                 finallyHandler);
+    }
+
 };
 
 return PassThroughHandlerContext;
 };
 
-},{"./util":36}],16:[function(_dereq_,module,exports){
+},{"./catch_filter":7,"./util":36}],16:[function(_dereq_,module,exports){
 "use strict";
 module.exports = function(Promise,
                           apiRejection,
@@ -2287,7 +2319,7 @@ PromiseSpawn.prototype._continue = function (result) {
             if (maybePromise === null) {
                 this._promiseRejected(
                     new TypeError(
-                        "A value %s was yielded that could not be treated as a promise\u000a\u000a    See http://goo.gl/MqrFmX\u000a\u000a".replace("%s", value) +
+                        "A value %s was yielded that could not be treated as a promise\u000a\u000a    See http://goo.gl/MqrFmX\u000a\u000a".replace("%s", String(value)) +
                         "From coroutine:\u000a" +
                         this._stack.split("\n").slice(1, -7).join("\n")
                     )
@@ -2917,30 +2949,31 @@ var createContext = Context.create;
 var debug = _dereq_("./debuggability")(Promise, Context);
 var CapturedTrace = debug.CapturedTrace;
 var PassThroughHandlerContext =
-    _dereq_("./finally")(Promise, tryConvertToPromise);
+    _dereq_("./finally")(Promise, tryConvertToPromise, NEXT_FILTER);
 var catchFilter = _dereq_("./catch_filter")(NEXT_FILTER);
 var nodebackForPromise = _dereq_("./nodeback");
 var errorObj = util.errorObj;
 var tryCatch = util.tryCatch;
 function check(self, executor) {
+    if (self == null || self.constructor !== Promise) {
+        throw new TypeError("the promise constructor cannot be invoked directly\u000a\u000a    See http://goo.gl/MqrFmX\u000a");
+    }
     if (typeof executor !== "function") {
         throw new TypeError("expecting a function but got " + util.classString(executor));
     }
-    if (self.constructor !== Promise) {
-        throw new TypeError("the promise constructor cannot be invoked directly\u000a\u000a    See http://goo.gl/MqrFmX\u000a");
-    }
+
 }
 
 function Promise(executor) {
+    if (executor !== INTERNAL) {
+        check(this, executor);
+    }
     this._bitField = 0;
     this._fulfillmentHandler0 = undefined;
     this._rejectionHandler0 = undefined;
     this._promise0 = undefined;
     this._receiver0 = undefined;
-    if (executor !== INTERNAL) {
-        check(this, executor);
-        this._resolveFromExecutor(executor);
-    }
+    this._resolveFromExecutor(executor);
     this._promiseCreated();
     this._fireEvent("promiseCreated", this);
 }
@@ -2959,8 +2992,8 @@ Promise.prototype.caught = Promise.prototype["catch"] = function (fn) {
             if (util.isObject(item)) {
                 catchInstances[j++] = item;
             } else {
-                return apiRejection("expecting an object but got " +
-                    "A catch statement predicate " + util.classString(item));
+                return apiRejection("Catch statement predicate: " +
+                    "expecting an object but got " + util.classString(item));
             }
         }
         catchInstances.length = j;
@@ -3339,6 +3372,7 @@ function(reason, synchronous, ignoreNonErrorWarnings) {
 };
 
 Promise.prototype._resolveFromExecutor = function (executor) {
+    if (executor === INTERNAL) return;
     var promise = this;
     this._captureStackTrace();
     this._pushContext();
@@ -3596,7 +3630,7 @@ _dereq_("./synchronous_inspection")(Promise);
 _dereq_("./join")(
     Promise, PromiseArray, tryConvertToPromise, INTERNAL, async, getDomain);
 Promise.Promise = Promise;
-Promise.version = "3.4.6";
+Promise.version = "3.5.0";
 _dereq_('./map.js')(Promise, PromiseArray, apiRejection, tryConvertToPromise, INTERNAL, debug);
 _dereq_('./call_get.js')(Promise);
 _dereq_('./using.js')(Promise, apiRejection, tryConvertToPromise, createContext, INTERNAL, debug);
@@ -3648,6 +3682,7 @@ function toResolutionValue(val) {
     switch(val) {
     case -2: return [];
     case -3: return {};
+    case -6: return new Map();
     }
 }
 
@@ -4197,7 +4232,7 @@ function PropertiesPromiseArray(obj) {
     }
     this.constructor$(entries);
     this._isMap = isMap;
-    this._init$(undefined, -3);
+    this._init$(undefined, isMap ? -6 : -3);
 }
 util.inherits(PropertiesPromiseArray, PromiseArray);
 
@@ -4284,23 +4319,6 @@ Queue.prototype._pushOne = function (arg) {
     var i = (this._front + length) & (this._capacity - 1);
     this[i] = arg;
     this._length = length + 1;
-};
-
-Queue.prototype._unshiftOne = function(value) {
-    var capacity = this._capacity;
-    this._checkCapacity(this.length() + 1);
-    var front = this._front;
-    var i = (((( front - 1 ) &
-                    ( capacity - 1) ) ^ capacity ) - capacity );
-    this[i] = value;
-    this._front = i;
-    this._length = this.length() + 1;
-};
-
-Queue.prototype.unshift = function(fn, receiver, arg) {
-    this._unshiftOne(arg);
-    this._unshiftOne(receiver);
-    this._unshiftOne(fn);
 };
 
 Queue.prototype.push = function (fn, receiver, arg) {
@@ -4613,11 +4631,11 @@ if (util.isNode && typeof MutationObserver === "undefined") {
 
         var scheduleToggle = function() {
             if (toggleScheduled) return;
-                toggleScheduled = true;
-                div2.classList.toggle("foo");
-            };
+            toggleScheduled = true;
+            div2.classList.toggle("foo");
+        };
 
-            return function schedule(fn) {
+        return function schedule(fn) {
             var o = new MutationObserver(function() {
                 o.disconnect();
                 fn();
@@ -5663,8 +5681,11 @@ if (typeof Symbol !== "undefined" && Symbol.iterator) {
 var isNode = typeof process !== "undefined" &&
         classString(process).toLowerCase() === "[object process]";
 
-function env(key, def) {
-    return isNode ? process.env[key] : def;
+var hasEnvVariables = typeof process !== "undefined" &&
+    typeof process.env !== "undefined";
+
+function env(key) {
+    return hasEnvVariables ? process.env[key] : undefined;
 }
 
 function getNativePromise() {
@@ -5712,6 +5733,7 @@ var ret = {
     hasDevTools: typeof chrome !== "undefined" && chrome &&
                  typeof chrome.loadTimes === "function",
     isNode: isNode,
+    hasEnvVariables: hasEnvVariables,
     env: env,
     global: globalObject,
     getNativePromise: getNativePromise,
@@ -5732,7 +5754,6 @@ module.exports = ret;
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"_process":7}],4:[function(require,module,exports){
 (function (process){
-
 /**
  * This is the web browser implementation of `debug()`.
  *
@@ -5772,14 +5793,23 @@ exports.colors = [
  */
 
 function useColors() {
+  // NB: In an Electron preload script, document will be defined but not fully
+  // initialized. Since we know we're in Chrome, we'll just detect this case
+  // explicitly
+  if (typeof window !== 'undefined' && window.process && window.process.type === 'renderer') {
+    return true;
+  }
+
   // is webkit? http://stackoverflow.com/a/16459606/376773
   // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
-  return (typeof document !== 'undefined' && 'WebkitAppearance' in document.documentElement.style) ||
+  return (typeof document !== 'undefined' && document && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance) ||
     // is firebug? http://stackoverflow.com/a/398120/376773
-    (window.console && (console.firebug || (console.exception && console.table))) ||
+    (typeof window !== 'undefined' && window && window.console && (window.console.firebug || (window.console.exception && window.console.table))) ||
     // is firefox >= v31?
     // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-    (navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31);
+    (typeof navigator !== 'undefined' && navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
+    // double check webkit in userAgent just in case we are in a worker
+    (typeof navigator !== 'undefined' && navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
 }
 
 /**
@@ -5801,8 +5831,7 @@ exports.formatters.j = function(v) {
  * @api public
  */
 
-function formatArgs() {
-  var args = arguments;
+function formatArgs(args) {
   var useColors = this.useColors;
 
   args[0] = (useColors ? '%c' : '')
@@ -5812,17 +5841,17 @@ function formatArgs() {
     + (useColors ? '%c ' : ' ')
     + '+' + exports.humanize(this.diff);
 
-  if (!useColors) return args;
+  if (!useColors) return;
 
   var c = 'color: ' + this.color;
-  args = [args[0], c, 'color: inherit'].concat(Array.prototype.slice.call(args, 1));
+  args.splice(1, 0, c, 'color: inherit')
 
   // the final "%c" is somewhat tricky, because there could be other
   // arguments passed either before or after the %c, so we need to
   // figure out the correct index to insert the CSS into
   var index = 0;
   var lastC = 0;
-  args[0].replace(/%[a-z%]/g, function(match) {
+  args[0].replace(/%[a-zA-Z%]/g, function(match) {
     if ('%%' === match) return;
     index++;
     if ('%c' === match) {
@@ -5833,7 +5862,6 @@ function formatArgs() {
   });
 
   args.splice(lastC, 0, c);
-  return args;
 }
 
 /**
@@ -5878,13 +5906,15 @@ function save(namespaces) {
 function load() {
   var r;
   try {
-    return exports.storage.debug;
+    r = exports.storage.debug;
   } catch(e) {}
 
   // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
-  if (typeof process !== 'undefined' && 'env' in process) {
-    return process.env.DEBUG;
+  if (!r && typeof process !== 'undefined' && 'env' in process) {
+    r = process.env.DEBUG;
   }
+
+  return r;
 }
 
 /**
@@ -5904,7 +5934,7 @@ exports.enable(load());
  * @api private
  */
 
-function localstorage(){
+function localstorage() {
   try {
     return window.localStorage;
   } catch (e) {}
@@ -5920,7 +5950,7 @@ function localstorage(){
  * Expose `debug()` as the module.
  */
 
-exports = module.exports = debug.debug = debug;
+exports = module.exports = createDebug.debug = createDebug['default'] = createDebug;
 exports.coerce = coerce;
 exports.disable = disable;
 exports.enable = enable;
@@ -5937,16 +5967,10 @@ exports.skips = [];
 /**
  * Map of special "%n" handling functions, for the debug "format" argument.
  *
- * Valid key names are a single, lowercased letter, i.e. "n".
+ * Valid key names are a single, lower or upper-case letter, i.e. "n" and "N".
  */
 
 exports.formatters = {};
-
-/**
- * Previously assigned color.
- */
-
-var prevColor = 0;
 
 /**
  * Previous log timestamp.
@@ -5956,13 +5980,20 @@ var prevTime;
 
 /**
  * Select a color.
- *
+ * @param {String} namespace
  * @return {Number}
  * @api private
  */
 
-function selectColor() {
-  return exports.colors[prevColor++ % exports.colors.length];
+function selectColor(namespace) {
+  var hash = 0, i;
+
+  for (i in namespace) {
+    hash  = ((hash << 5) - hash) + namespace.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+
+  return exports.colors[Math.abs(hash) % exports.colors.length];
 }
 
 /**
@@ -5973,17 +6004,13 @@ function selectColor() {
  * @api public
  */
 
-function debug(namespace) {
+function createDebug(namespace) {
 
-  // define the `disabled` version
-  function disabled() {
-  }
-  disabled.enabled = false;
+  function debug() {
+    // disabled?
+    if (!debug.enabled) return;
 
-  // define the `enabled` version
-  function enabled() {
-
-    var self = enabled;
+    var self = debug;
 
     // set `diff` timestamp
     var curr = +new Date();
@@ -5993,10 +6020,7 @@ function debug(namespace) {
     self.curr = curr;
     prevTime = curr;
 
-    // add the `color` if not set
-    if (null == self.useColors) self.useColors = exports.useColors();
-    if (null == self.color && self.useColors) self.color = selectColor();
-
+    // turn the `arguments` into a proper Array
     var args = new Array(arguments.length);
     for (var i = 0; i < args.length; i++) {
       args[i] = arguments[i];
@@ -6005,13 +6029,13 @@ function debug(namespace) {
     args[0] = exports.coerce(args[0]);
 
     if ('string' !== typeof args[0]) {
-      // anything else let's inspect with %o
-      args = ['%o'].concat(args);
+      // anything else let's inspect with %O
+      args.unshift('%O');
     }
 
     // apply any `formatters` transformations
     var index = 0;
-    args[0] = args[0].replace(/%([a-z%])/g, function(match, format) {
+    args[0] = args[0].replace(/%([a-zA-Z%])/g, function(match, format) {
       // if we encounter an escaped % then don't increase the array index
       if (match === '%%') return match;
       index++;
@@ -6027,19 +6051,24 @@ function debug(namespace) {
       return match;
     });
 
-    // apply env-specific formatting
-    args = exports.formatArgs.apply(self, args);
+    // apply env-specific formatting (colors, etc.)
+    exports.formatArgs.call(self, args);
 
-    var logFn = enabled.log || exports.log || console.log.bind(console);
+    var logFn = debug.log || exports.log || console.log.bind(console);
     logFn.apply(self, args);
   }
-  enabled.enabled = true;
 
-  var fn = exports.enabled(namespace) ? enabled : disabled;
+  debug.namespace = namespace;
+  debug.enabled = exports.enabled(namespace);
+  debug.useColors = exports.useColors();
+  debug.color = selectColor(namespace);
 
-  fn.namespace = namespace;
+  // env-specific initialization logic for debug instances
+  if ('function' === typeof exports.init) {
+    exports.init(debug);
+  }
 
-  return fn;
+  return debug;
 }
 
 /**
@@ -6053,12 +6082,15 @@ function debug(namespace) {
 function enable(namespaces) {
   exports.save(namespaces);
 
-  var split = (namespaces || '').split(/[\s,]+/);
+  exports.names = [];
+  exports.skips = [];
+
+  var split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/);
   var len = split.length;
 
   for (var i = 0; i < len; i++) {
     if (!split[i]) continue; // ignore empty strings
-    namespaces = split[i].replace(/[\\^$+?.()|[\]{}]/g, '\\$&').replace(/\*/g, '.*?');
+    namespaces = split[i].replace(/\*/g, '.*?');
     if (namespaces[0] === '-') {
       exports.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
     } else {
@@ -6132,7 +6164,7 @@ var y = d * 365.25
  *  - `long` verbose formatting [false]
  *
  * @param {String|Number} val
- * @param {Object} options
+ * @param {Object} [options]
  * @throws {Error} throw an error if val is not a non-empty string or a number
  * @return {String|Number}
  * @api public
@@ -6435,6 +6467,10 @@ process.off = noop;
 process.removeListener = noop;
 process.removeAllListeners = noop;
 process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');
@@ -6471,15 +6507,17 @@ var __param;
 var __metadata;
 var __awaiter;
 var __generator;
+var __exportStar;
+var __values;
+var __read;
+var __spread;
+var __await;
+var __asyncGenerator;
+var __asyncDelegator;
+var __asyncValues;
 (function (factory) {
     var root = typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : {};
-    if (typeof System === "object" && typeof System.register === "function") {
-        System.register("tslib", [], function (exporter) {
-            factory(createExporter(root, exporter));
-            return { setters: [], execute: function() { } };
-        });
-    }
-    else if (typeof define === "function" && define.amd) {
+    if (typeof define === "function" && define.amd) {
         define("tslib", ["exports"], function (exports) { factory(createExporter(root, createExporter(exports))); });
     }
     else if (typeof module === "object" && typeof module.exports === "object") {
@@ -6488,14 +6526,17 @@ var __generator;
     else {
         factory(createExporter(root));
     }
-
     function createExporter(exports, previous) {
         return function (id, v) { return exports[id] = previous ? previous(id, v) : v; };
     }
 })
 (function (exporter) {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+
     __extends = function (d, b) {
-        for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+        extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
@@ -6538,13 +6579,13 @@ var __generator;
             function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
             function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
             function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-            step((generator = generator.apply(thisArg, _arguments)).next());
+            step((generator = generator.apply(thisArg, _arguments || [])).next());
         });
     };
 
     __generator = function (thisArg, body) {
-        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
-        return { next: verb(0), "throw": verb(1), "return": verb(2) };
+        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+        return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
         function verb(n) { return function (v) { return step([n, v]); }; }
         function step(op) {
             if (f) throw new TypeError("Generator is already executing.");
@@ -6570,6 +6611,72 @@ var __generator;
         }
     };
 
+    __exportStar = function (m, exports) {
+        for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+    };
+
+    __values = function (o) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+        if (m) return m.call(o);
+        return {
+            next: function () {
+                if (o && i >= o.length) o = void 0;
+                return { value: o && o[i++], done: !o };
+            }
+        };
+    };
+
+    __read = function (o, n) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator];
+        if (!m) return o;
+        var i = m.call(o), r, ar = [], e;
+        try {
+            while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+        }
+        catch (error) { e = { error: error }; }
+        finally {
+            try {
+                if (r && !r.done && (m = i["return"])) m.call(i);
+            }
+            finally { if (e) throw e.error; }
+        }
+        return ar;
+    };
+
+    __spread = function () {
+        for (var ar = [], i = 0; i < arguments.length; i++)
+            ar = ar.concat(__read(arguments[i]));
+        return ar;
+    };
+
+    __await = function (v) {
+        return this instanceof __await ? (this.v = v, this) : new __await(v);
+    };
+
+    __asyncGenerator = function (thisArg, _arguments, generator) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var g = generator.apply(thisArg, _arguments || []), i, q = [];
+        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+        function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+        function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+        function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+        function fulfill(value) { resume("next", value); }
+        function reject(value) { resume("throw", value); }
+        function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+    };
+
+    __asyncDelegator = function (o) {
+        var i, p;
+        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+        function verb(n) { if (o[n]) i[n] = function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : v; }; }
+    };
+
+    __asyncValues = function (o) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var m = o[Symbol.asyncIterator];
+        return m ? m.call(o) : typeof __values === "function" ? __values(o) : o[Symbol.iterator]();
+    };
+
     exporter("__extends", __extends);
     exporter("__assign", __assign);
     exporter("__rest", __rest);
@@ -6578,11 +6685,19 @@ var __generator;
     exporter("__metadata", __metadata);
     exporter("__awaiter", __awaiter);
     exporter("__generator", __generator);
+    exporter("__exportStar", __exportStar);
+    exporter("__values", __values);
+    exporter("__read", __read);
+    exporter("__spread", __spread);
+    exporter("__await", __await);
+    exporter("__asyncGenerator", __asyncGenerator);
+    exporter("__asyncDelegator", __asyncDelegator);
+    exporter("__asyncValues", __asyncValues);
 });
-
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],9:[function(require,module,exports){
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 ;
 var Promise = require("bluebird");
 var ServiceClass = (function () {
@@ -6600,11 +6715,11 @@ ServiceClass.newInstance = function () {
     return Promise.resolve(new ServiceClass());
 };
 var newService = ServiceClass.newInstance;
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = newService;
 
 },{"bluebird":3}],10:[function(require,module,exports){
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 ;
 var worker_1 = require("../../dist/worker");
 var sample_service_1 = require("./sample-service");

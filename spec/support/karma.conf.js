@@ -33,6 +33,9 @@ module.exports = function (config) {
         flags: [ '--no-sandbox' ]
       }
     },
+    mime: {
+      'text/x-typescript': [ 'ts', 'tsx' ] // workaround for Chrome, as in https://github.com/angular/angular-cli/issues/2125
+    },
     autoWatch: true,
     singleRun: true,
     plugins: [
