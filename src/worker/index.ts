@@ -45,11 +45,12 @@ export interface ServiceBinder {
  */
 export interface ServiceBinderSpec<S extends Object> {
   /**
+   * no type checking to facilitate import from client-code with dom types
    * @public
    * @prop {DedicatedWorkerGlobalScope} worker target `Worker`
    * (`self` in {DedicatedWorkerGlobalScope})
    */
-  worker: DedicatedWorkerGlobalScope
+  worker: any // DedicatedWorkerGlobalScope
   /**
    * @public
    * @prop {S extends Object} service?
