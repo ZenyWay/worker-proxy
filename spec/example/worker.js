@@ -130,7 +130,7 @@ function isObjectPrototype(val) {
 var hookService = WorkerServiceClass.hookService;
 exports.default = hookService;
 
-},{"../common/utils":1,"bluebird":3,"debug":4,"tslib":8}],3:[function(require,module,exports){
+},{"../common/utils":1,"bluebird":3,"debug":5,"tslib":8}],3:[function(require,module,exports){
 (function (process,global){
 /* @preserve
  * The MIT License (MIT)
@@ -5753,6 +5753,160 @@ module.exports = ret;
 });                    ;if (typeof window !== 'undefined' && window !== null) {                               window.P = window.Promise;                                                     } else if (typeof self !== 'undefined' && self !== null) {                             self.P = self.Promise;                                                         }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"_process":7}],4:[function(require,module,exports){
+/**
+ * Helpers.
+ */
+
+var s = 1000;
+var m = s * 60;
+var h = m * 60;
+var d = h * 24;
+var y = d * 365.25;
+
+/**
+ * Parse or format the given `val`.
+ *
+ * Options:
+ *
+ *  - `long` verbose formatting [false]
+ *
+ * @param {String|Number} val
+ * @param {Object} [options]
+ * @throws {Error} throw an error if val is not a non-empty string or a number
+ * @return {String|Number}
+ * @api public
+ */
+
+module.exports = function(val, options) {
+  options = options || {};
+  var type = typeof val;
+  if (type === 'string' && val.length > 0) {
+    return parse(val);
+  } else if (type === 'number' && isNaN(val) === false) {
+    return options.long ? fmtLong(val) : fmtShort(val);
+  }
+  throw new Error(
+    'val is not a non-empty string or a valid number. val=' +
+      JSON.stringify(val)
+  );
+};
+
+/**
+ * Parse the given `str` and return milliseconds.
+ *
+ * @param {String} str
+ * @return {Number}
+ * @api private
+ */
+
+function parse(str) {
+  str = String(str);
+  if (str.length > 100) {
+    return;
+  }
+  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(
+    str
+  );
+  if (!match) {
+    return;
+  }
+  var n = parseFloat(match[1]);
+  var type = (match[2] || 'ms').toLowerCase();
+  switch (type) {
+    case 'years':
+    case 'year':
+    case 'yrs':
+    case 'yr':
+    case 'y':
+      return n * y;
+    case 'days':
+    case 'day':
+    case 'd':
+      return n * d;
+    case 'hours':
+    case 'hour':
+    case 'hrs':
+    case 'hr':
+    case 'h':
+      return n * h;
+    case 'minutes':
+    case 'minute':
+    case 'mins':
+    case 'min':
+    case 'm':
+      return n * m;
+    case 'seconds':
+    case 'second':
+    case 'secs':
+    case 'sec':
+    case 's':
+      return n * s;
+    case 'milliseconds':
+    case 'millisecond':
+    case 'msecs':
+    case 'msec':
+    case 'ms':
+      return n;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Short format for `ms`.
+ *
+ * @param {Number} ms
+ * @return {String}
+ * @api private
+ */
+
+function fmtShort(ms) {
+  if (ms >= d) {
+    return Math.round(ms / d) + 'd';
+  }
+  if (ms >= h) {
+    return Math.round(ms / h) + 'h';
+  }
+  if (ms >= m) {
+    return Math.round(ms / m) + 'm';
+  }
+  if (ms >= s) {
+    return Math.round(ms / s) + 's';
+  }
+  return ms + 'ms';
+}
+
+/**
+ * Long format for `ms`.
+ *
+ * @param {Number} ms
+ * @return {String}
+ * @api private
+ */
+
+function fmtLong(ms) {
+  return plural(ms, d, 'day') ||
+    plural(ms, h, 'hour') ||
+    plural(ms, m, 'minute') ||
+    plural(ms, s, 'second') ||
+    ms + ' ms';
+}
+
+/**
+ * Pluralization helper.
+ */
+
+function plural(ms, n, name) {
+  if (ms < n) {
+    return;
+  }
+  if (ms < n * 1.5) {
+    return Math.floor(ms / n) + ' ' + name;
+  }
+  return Math.ceil(ms / n) + ' ' + name + 's';
+}
+
+},{}],5:[function(require,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -5802,14 +5956,14 @@ function useColors() {
 
   // is webkit? http://stackoverflow.com/a/16459606/376773
   // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
-  return (typeof document !== 'undefined' && document && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance) ||
+  return (typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance) ||
     // is firebug? http://stackoverflow.com/a/398120/376773
-    (typeof window !== 'undefined' && window && window.console && (window.console.firebug || (window.console.exception && window.console.table))) ||
+    (typeof window !== 'undefined' && window.console && (window.console.firebug || (window.console.exception && window.console.table))) ||
     // is firefox >= v31?
     // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-    (typeof navigator !== 'undefined' && navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
+    (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
     // double check webkit in userAgent just in case we are in a worker
-    (typeof navigator !== 'undefined' && navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
+    (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
 }
 
 /**
@@ -5941,7 +6095,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":5,"_process":7}],5:[function(require,module,exports){
+},{"./debug":6,"_process":7}],6:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -6145,158 +6299,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":6}],6:[function(require,module,exports){
-/**
- * Helpers.
- */
-
-var s = 1000
-var m = s * 60
-var h = m * 60
-var d = h * 24
-var y = d * 365.25
-
-/**
- * Parse or format the given `val`.
- *
- * Options:
- *
- *  - `long` verbose formatting [false]
- *
- * @param {String|Number} val
- * @param {Object} [options]
- * @throws {Error} throw an error if val is not a non-empty string or a number
- * @return {String|Number}
- * @api public
- */
-
-module.exports = function (val, options) {
-  options = options || {}
-  var type = typeof val
-  if (type === 'string' && val.length > 0) {
-    return parse(val)
-  } else if (type === 'number' && isNaN(val) === false) {
-    return options.long ?
-			fmtLong(val) :
-			fmtShort(val)
-  }
-  throw new Error('val is not a non-empty string or a valid number. val=' + JSON.stringify(val))
-}
-
-/**
- * Parse the given `str` and return milliseconds.
- *
- * @param {String} str
- * @return {Number}
- * @api private
- */
-
-function parse(str) {
-  str = String(str)
-  if (str.length > 10000) {
-    return
-  }
-  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(str)
-  if (!match) {
-    return
-  }
-  var n = parseFloat(match[1])
-  var type = (match[2] || 'ms').toLowerCase()
-  switch (type) {
-    case 'years':
-    case 'year':
-    case 'yrs':
-    case 'yr':
-    case 'y':
-      return n * y
-    case 'days':
-    case 'day':
-    case 'd':
-      return n * d
-    case 'hours':
-    case 'hour':
-    case 'hrs':
-    case 'hr':
-    case 'h':
-      return n * h
-    case 'minutes':
-    case 'minute':
-    case 'mins':
-    case 'min':
-    case 'm':
-      return n * m
-    case 'seconds':
-    case 'second':
-    case 'secs':
-    case 'sec':
-    case 's':
-      return n * s
-    case 'milliseconds':
-    case 'millisecond':
-    case 'msecs':
-    case 'msec':
-    case 'ms':
-      return n
-    default:
-      return undefined
-  }
-}
-
-/**
- * Short format for `ms`.
- *
- * @param {Number} ms
- * @return {String}
- * @api private
- */
-
-function fmtShort(ms) {
-  if (ms >= d) {
-    return Math.round(ms / d) + 'd'
-  }
-  if (ms >= h) {
-    return Math.round(ms / h) + 'h'
-  }
-  if (ms >= m) {
-    return Math.round(ms / m) + 'm'
-  }
-  if (ms >= s) {
-    return Math.round(ms / s) + 's'
-  }
-  return ms + 'ms'
-}
-
-/**
- * Long format for `ms`.
- *
- * @param {Number} ms
- * @return {String}
- * @api private
- */
-
-function fmtLong(ms) {
-  return plural(ms, d, 'day') ||
-    plural(ms, h, 'hour') ||
-    plural(ms, m, 'minute') ||
-    plural(ms, s, 'second') ||
-    ms + ' ms'
-}
-
-/**
- * Pluralization helper.
- */
-
-function plural(ms, n, name) {
-  if (ms < n) {
-    return
-  }
-  if (ms < n * 1.5) {
-    return Math.floor(ms / n) + ' ' + name
-  }
-  return Math.ceil(ms / n) + ' ' + name + 's'
-}
-
-},{}],7:[function(require,module,exports){
+},{"ms":4}],7:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -6667,8 +6670,8 @@ var __asyncValues;
 
     __asyncDelegator = function (o) {
         var i, p;
-        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
-        function verb(n) { if (o[n]) i[n] = function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : v; }; }
+        return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+        function verb(n, f) { if (o[n]) i[n] = function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; }; }
     };
 
     __asyncValues = function (o) {
@@ -6740,4 +6743,4 @@ service
     onterminate: onterminate
 }); });
 
-},{"../../dist/worker":2,"./sample-service":9,"debug":4}]},{},[10]);
+},{"../../dist/worker":2,"./sample-service":9,"debug":5}]},{},[10]);

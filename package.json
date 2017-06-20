@@ -1,6 +1,6 @@
 {
   "name": "worker-proxy",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "thread-local proxy for a given service spawned in dedicated Worker thread",
   "main": "dist/proxy",
   "scripts": {
